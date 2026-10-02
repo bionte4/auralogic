@@ -48,7 +48,7 @@ export class LessonsService {
   ) {}
 
   async getById(user: AuthenticatedUser, lessonId: string): Promise<LessonDetail> {
-    await this.progressService.assertLessonAccessible(user, lessonId);
+    await this.progressService.assertLessonAccessible(user, lessonId, 'content');
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },

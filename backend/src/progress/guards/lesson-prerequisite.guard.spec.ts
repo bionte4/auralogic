@@ -39,7 +39,7 @@ describe('LessonPrerequisiteGuard', () => {
     progressService.assertLessonAccessible.mockResolvedValue(undefined);
 
     await expect(guard.canActivate(contextFor(student, LESSON_ID))).resolves.toBe(true);
-    expect(progressService.assertLessonAccessible).toHaveBeenCalledWith(student, LESSON_ID);
+    expect(progressService.assertLessonAccessible).toHaveBeenCalledWith(student, LESSON_ID, 'write');
   });
 
   it('propagates ForbiddenException when level N-1 is incomplete', async () => {

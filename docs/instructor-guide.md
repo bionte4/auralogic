@@ -7,14 +7,19 @@ A super admin uses the same sign-in page and also sees **Users**, **Finance**, a
 ## Create a course
 
 1. Open **Instructor** and create a course at `/instructor/courses/new`.
-2. Set the title, description, level label, and price in rupiah.
-3. Add levels in the order students must take them. Level 1 has no prerequisite. Level 2 opens only after every lesson in level 1 is complete.
+2. Set the title, description, level label, and price in rupiah. On the course outline you can also set an https cover image, a Kurikulum Merdeka phase (Fase A–F), and the course learning outcome.
+3. Add levels in the order students must take them. Each level can carry its own learning outcome. Level 1 has no prerequisite. Level 2 opens only after every lesson in level 1 is complete, unless a placement check starts the student on a later level.
 4. Inside a level, add lessons:
    - **Video** for an HLS lesson.
    - **Reading** for text.
    - **Quiz** with a passing score. The studio starts at 80.
 5. For a quiz, add questions and choices. Students never receive the answer key. The server shuffles questions and scores the attempt.
-6. Choose **Publish** when the course should appear to students. An unpublished course stays out of the catalog.
+6. Optional: add a placement check. Each answer points at a start level. The server averages those levels, opens the course there, and still blocks every level after an unfinished one. Students who have not taken the check cannot open lessons.
+7. Choose **Publish** when the course should appear to students. An unpublished course stays out of the catalog.
+
+The **Students** tab lists payment, progress, the level each student started on, and the phase-project score. Add a class name such as `7A`, then put enrolled students into that class. The list can show one class at a time.
+
+On the outline, save a phase project with a prompt and a short rubric. Students can submit only after every lesson is complete. Score the submission from 0 to 100 on the student row.
 
 You can preview a lesson in a course you own without buying it. Students cannot.
 

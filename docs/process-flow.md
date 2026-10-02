@@ -25,20 +25,24 @@ Forgot-password always shows the same message, whether or not the email exists. 
 
 ```mermaid
 flowchart TD
-  create[Create course] --> levels[Add levels in order]
+  create[Create course] --> profile[Cover, phase, learning outcome]
+  profile --> levels[Add levels and level outcomes]
   levels --> lessons[Add video, reading, or quiz lessons]
-  lessons --> files[Optional PPT, PDF, or DOCX]
-  files --> publish[Publish]
+  lessons --> placement[Optional placement check]
+  placement --> files[Optional PPT, PDF, or DOCX]
+  files --> project[Optional phase project]
+  project --> publish[Publish]
   publish --> catalog[Visible to students]
 ```
 
-Level 1 has no prerequisite. Level 2 opens only after every lesson in level 1 is complete. A quiz starts with a passing score of 80 unless the instructor changes it. The answer key is never sent to the student.
+Level 1 has no prerequisite. Level 2 opens only after every lesson in level 1 is complete, unless a placement check starts the student on a later level. A quiz starts with a passing score of 80 unless the instructor changes it. The answer key is never sent to the student. The placement answer key stays on the server.
 
 ## 3. Pay and unlock
 
 ```mermaid
 flowchart TD
-  browse[Student opens a published course] --> checkout[Checkout]
+  browse[Student opens the course page] --> preview[Free preview of the first lesson]
+  preview --> checkout[Checkout]
   checkout --> pending[Enrollment pending and unpaid]
   pending --> gateway[Midtrans or Xendit]
   gateway --> notify[Provider sends POST notification]
@@ -47,7 +51,10 @@ flowchart TD
   check -->|No| stay[Enrollment stays locked]
   gateway --> browser[Browser returns to the site]
   browser --> stay
-  active --> learn[Student can open level 1]
+  active --> diagnose{Placement questions exist?}
+  diagnose -->|Yes| placed[Student answers the placement check]
+  placed --> learn[Course opens at the diagnosed level]
+  diagnose -->|No| learn
 ```
 
 The notification URL is `https://api.fluentis.web.id/api/payments/midtrans/notification`. Opening it in a browser does not record a payment. A refund sets the enrollment to cancelled and the payment to refunded. A later failure notice does not remove access that was already paid.
@@ -73,6 +80,10 @@ flowchart TD
 ```
 
 A quiz that has questions ignores a score typed by the browser. The server shuffles questions and choices, then computes the score. A completed lesson cannot be reopened as incomplete.
+
+A placement check can open the course at a later level. Levels up to that start stay available for review. Every level after the start still waits until the previous level is complete. If the course has placement questions and the student has not answered them, every lesson returns 403.
+
+The phase project opens only after every lesson is complete. The teacher scores that submission. A named class groups enrolled students so the roster can be read one class at a time. Joining a class does not grant access.
 
 Rewards are granted once: 10 XP for a video or reading lesson, 25 XP for a quiz, and 50 XP when a whole level is complete. A quiz score of 90 or more can add a distinction badge. The streak uses the Asia/Jakarta day.
 

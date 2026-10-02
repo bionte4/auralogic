@@ -1,4 +1,4 @@
-import type { CefrLevel, CourseStatus, EnrollmentStatus, LessonType, PaymentStatus } from '@prisma/client';
+import type { CefrLevel, CourseStatus, EnrollmentStatus, LearningPhase, LessonType, PaymentStatus } from '@prisma/client';
 
 export interface InstructorSummary {
   id: string;
@@ -8,6 +8,7 @@ export interface InstructorSummary {
 export interface LessonSummary {
   id: string;
   title: string;
+  description: string | null;
   type: LessonType;
   orderIndex: number;
   passingScore: number | null;
@@ -18,6 +19,7 @@ export interface ModuleSummary {
   id: string;
   title: string;
   description: string | null;
+  outcome: string | null;
   orderIndex: number;
   lessons: LessonSummary[];
 }
@@ -31,6 +33,9 @@ export interface CourseSummary {
   status: CourseStatus;
   publishedAt: Date | null;
   price: string;
+  coverImageUrl: string | null;
+  phase: LearningPhase | null;
+  outcome: string | null;
   instructor: InstructorSummary;
 }
 
@@ -43,6 +48,7 @@ export interface CreatedModule {
   courseId: string;
   title: string;
   description: string | null;
+  outcome: string | null;
   orderIndex: number;
 }
 
@@ -74,10 +80,20 @@ export interface RosterEntry {
   completedLessons: number;
   lessonCount: number;
   progressPercent: number;
+  startOrderIndex: number | null;
+  classIds: string[];
+  projectSubmitted: boolean;
+  projectScore: number | null;
+}
+
+export interface CourseClassSummary {
+  id: string;
+  name: string;
 }
 
 export interface CourseRoster {
   courseId: string;
   lessonCount: number;
+  classes: CourseClassSummary[];
   enrollments: RosterEntry[];
 }

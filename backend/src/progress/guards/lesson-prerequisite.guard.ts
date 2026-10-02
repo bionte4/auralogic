@@ -18,7 +18,10 @@ export class LessonPrerequisiteGuard implements CanActivate {
     }
 
     const lessonId = readUuidParam(request.params.lessonId, 'lessonId');
-    await this.progressService.assertLessonAccessible(request.user, lessonId);
+    const method = typeof request.method === 'string' ? request.method.toUpperCase() : '';
+    const url = request.originalUrl ?? request.url ?? '';
+    const preview = method === 'GET' && !url.includes('/attachments');
+    await this.progressService.assertLessonAccessible(request.user, lessonId, preview ? 'content' : 'write');
     return true;
   }
 }

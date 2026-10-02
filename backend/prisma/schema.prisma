@@ -5,6 +5,10 @@
 //   A lesson in module N is reachable only when every lesson in the module
 //   with the same courseId and orderIndex = N - 1 has UserProgress.status =
 //   COMPLETED for that user. orderIndex starts at 1; module 1 has no predecessor.
+//   A CoursePlacement.startOrderIndex of S treats modules 1..S as already open.
+//   Modules after S still require the previous module to be complete.
+//   When the course has placement questions and the student has no placement,
+//   every lesson stays locked until the placement attempt is stored.
 //   The lookup key is @@unique([courseId, orderIndex]) on Module and
 //   @@unique([userId, lessonId]) on UserProgress.
 //   Access also requires an Enrollment with status ACTIVE, paymentStatus PAID,
@@ -48,6 +52,22 @@ enum CefrLevel {
   B2
   C1
   C2
+}
+
+/// Kurikulum Merdeka phase. A is grades 1–2 through F for grades 11–12.
+enum LearningPhase {
+  A
+  B
+  C
+  D
+  E
+  F
+}
+
+/// End-of-phase evidence. Speaking is a written transcript the teacher scores.
+enum ProjectKind {
+  WRITING
+  SPEAKING
 }
 
 enum LessonType {
@@ -123,7 +143,10 @@ model User {
   badges            UserBadge[]
   quizAttempts      QuizAttempt[]
   certificates      Certificate[]
-  passwordResets    PasswordResetToken[]
+  passwordResets      PasswordResetToken[]
+  coursePlacements    CoursePlacement[]
+  projectSubmissions  PhaseProjectSubmission[]
+  classMemberships    CourseClassMember[]
 
   @@index([role])
   @@map("users")
@@ -151,16 +174,25 @@ model Course {
   description  String
   level        CefrLevel
   /// Whole IDR amount charged at checkout. The client cannot override it.
-  price        Decimal      @db.Decimal(12, 2)
-  status       CourseStatus @default(DRAFT)
-  publishedAt  DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  price          Decimal       @db.Decimal(12, 2)
+  /// Public https cover shown on the catalog. Empty when the card uses a plain panel.
+  coverImageUrl  String?
+  phase          LearningPhase?
+  /// Course-level capaian pembelajaran.
+  outcome        String?
+  status         CourseStatus  @default(DRAFT)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  instructor   User          @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Restrict)
-  modules      Module[]
-  enrollments  Enrollment[]
-  certificates Certificate[]
+  instructor           User                @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Restrict)
+  modules              Module[]
+  enrollments          Enrollment[]
+  certificates         Certificate[]
+  placements           CoursePlacement[]
+  placementQuestions   PlacementQuestion[]
+  phaseProject         PhaseProject?
+  classes              CourseClass[]
 
   @@index([instructorId])
   @@index([status, level])
@@ -172,8 +204,11 @@ model Module {
   courseId    String   @db.Uuid
   title       String
   description String?
+  /// Capaian pembelajaran for this level.
+  outcome     String?
   /// 1-based, unique, and contiguous within the course.
-  /// Module N stays locked until module N - 1 is fully COMPLETED.
+  /// Module N stays locked until module N - 1 is fully COMPLETED,
+  /// unless a course placement opens this level as the start.
   orderIndex  Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -183,6 +218,50 @@ model Module {
 
   @@unique([courseId, orderIndex])
   @@map("modules")
+}
+
+/// Diagnostic result. startOrderIndex is the first level the student may open
+/// without completing the levels before it.
+model CoursePlacement {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  courseId        String   @db.Uuid
+  startOrderIndex Int
+  createdAt       DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("course_placements")
+}
+
+model PlacementQuestion {
+  id         String   @id @default(uuid()) @db.Uuid
+  courseId   String   @db.Uuid
+  prompt     String
+  orderIndex Int
+  createdAt  DateTime @default(now())
+
+  course  Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  choices PlacementChoice[]
+
+  @@unique([courseId, orderIndex])
+  @@map("placement_questions")
+}
+
+model PlacementChoice {
+  id               String @id @default(uuid()) @db.Uuid
+  questionId       String @db.Uuid
+  text             String
+  /// Module orderIndex this answer recommends as the start level.
+  targetOrderIndex Int
+  orderIndex       Int
+
+  question PlacementQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, orderIndex])
+  @@map("placement_choices")
 }
 
 model Lesson {
@@ -339,6 +418,68 @@ model Certificate {
   @@unique([userId, courseId])
   @@index([userId, issuedAt])
   @@map("certificates")
+}
+
+/// One culminating task for the course phase. Students submit after every lesson is complete.
+model PhaseProject {
+  id        String      @id @default(uuid()) @db.Uuid
+  courseId  String      @unique @db.Uuid
+  title     String
+  prompt    String
+  kind      ProjectKind
+  rubric    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  course      Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions PhaseProjectSubmission[]
+
+  @@map("phase_projects")
+}
+
+model PhaseProjectSubmission {
+  id          String    @id @default(uuid()) @db.Uuid
+  projectId   String    @db.Uuid
+  userId      String    @db.Uuid
+  response    String
+  score       Int?
+  feedback    String?
+  submittedAt DateTime  @default(now())
+  scoredAt    DateTime?
+
+  project PhaseProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("phase_project_submissions")
+}
+
+/// A named class inside one course. Membership does not grant access by itself.
+model CourseClass {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+
+  course  Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  members CourseClassMember[]
+
+  @@unique([courseId, name])
+  @@map("course_classes")
+}
+
+model CourseClassMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  courseClass CourseClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, userId])
+  @@index([userId])
+  @@map("course_class_members")
 }
 
 model Enrollment {

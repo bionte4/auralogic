@@ -29,32 +29,44 @@ export function overallProgress(courses: ReadonlyArray<{ accessGranted: boolean;
 export function continueTarget<T extends { courseId: string; title: string; accessGranted: boolean; progressPercent: number }>(
   courses: readonly T[],
   modulesFor: (courseId: string) => ModuleProgress[] | undefined,
+  startFor: (courseId: string) => number = () => 1,
 ): { course: T; lesson: LessonProgress } | null {
   const active = courses.filter((course) => course.accessGranted);
   const next = active.find((course) => course.progressPercent < 100) ?? active[0];
   if (!next) {
     return null;
   }
-  const lesson = firstOpenLesson(modulesFor(next.courseId) ?? []);
+  const lesson = firstOpenLesson(modulesFor(next.courseId) ?? [], startFor(next.courseId));
   if (!lesson) {
     return null;
   }
   return { course: next, lesson };
 }
 
-export function firstOpenLesson(modules: ModuleProgress[]): LessonProgress | null {
-  const lessons = modules.flatMap((module) => module.lessons);
-  return lessons.find((lesson) => !lesson.locked && lesson.status !== 'COMPLETED') ?? lessons.find((lesson) => !lesson.locked) ?? null;
+export function firstOpenLesson(modules: ModuleProgress[], startOrderIndex = 1): LessonProgress | null {
+  const ranked = modules.flatMap((module) => module.lessons.map((lesson) => ({ lesson, level: module.orderIndex })));
+  const preferred = ranked.find(
+    (item) => item.level >= startOrderIndex && !item.lesson.locked && item.lesson.status !== 'COMPLETED',
+  );
+  if (preferred) {
+    return preferred.lesson;
+  }
+  const earlier = ranked.find((item) => !item.lesson.locked && item.lesson.status !== 'COMPLETED');
+  return earlier?.lesson ?? ranked.find((item) => !item.lesson.locked)?.lesson ?? null;
 }
 
-export function resolveLessonId(modules: ModuleProgress[], requestedId: string | null): string | null {
+export function resolveLessonId(
+  modules: ModuleProgress[],
+  requestedId: string | null,
+  startOrderIndex = 1,
+): string | null {
   if (requestedId) {
     const requested = modules.flatMap((module) => module.lessons).find((lesson) => lesson.id === requestedId);
     if (requested && !requested.locked) {
       return requested.id;
     }
   }
-  return firstOpenLesson(modules)?.id ?? null;
+  return firstOpenLesson(modules, startOrderIndex)?.id ?? null;
 }
 
 export function completedLessonCount(modules: ModuleProgress[]): { completed: number; total: number } {

@@ -89,7 +89,7 @@ export class VideoService {
   }
 
   async getPlayback(user: AuthenticatedUser, lessonId: string): Promise<PlaybackGrant> {
-    await this.progressService.assertLessonAccessible(user, lessonId);
+    await this.progressService.assertLessonAccessible(user, lessonId, 'content');
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },

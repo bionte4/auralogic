@@ -2,6 +2,10 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { ClassRoster } from '@/components/instructor/class-roster';
+import { CourseProfileForm } from '@/components/instructor/course-profile-form';
+import { PhaseProjectForm } from '@/components/instructor/phase-project-form';
+import { PlacementEditor } from '@/components/instructor/placement-editor';
 import { LessonMaterials } from '@/components/instructor/lesson-materials';
 import { LessonUploader } from '@/components/instructor/lesson-uploader';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +75,8 @@ export function CourseStudio({ courseId }: { courseId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            {course.level} · {formatIdr(course.price)}
+            {course.level}
+            {course.phase ? ` · Fase ${course.phase}` : ''} · {formatIdr(course.price)}
           </p>
           <h1 className="mt-1 text-3xl font-semibold">{course.title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{course.description}</p>
@@ -134,7 +139,15 @@ export function CourseStudio({ courseId }: { courseId: string }) {
           )}
         </div>
       ) : null}
-      {tab === 'students' ? <RosterTable roster={roster} /> : null}
+      {tab === 'students' ? (
+        <ClassRoster
+          courseId={course.id}
+          roster={roster}
+          onChange={async () => {
+            await load();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -149,6 +162,7 @@ function Outline({
   onError: (message: string | null) => void;
 }) {
   const [moduleTitle, setModuleTitle] = useState('');
+  const [moduleOutcome, setModuleOutcome] = useState('');
   const [lessonByModule, setLessonByModule] = useState<Record<string, LessonDraft>>({});
 
   async function addModule(event: FormEvent<HTMLFormElement>) {
@@ -162,9 +176,13 @@ function Outline({
     try {
       await apiRequest<CreatedModule>(`/courses/${course.id}/modules`, {
         method: 'POST',
-        body: JSON.stringify({ title: moduleTitle.trim() }),
+        body: JSON.stringify({
+          title: moduleTitle.trim(),
+          ...(moduleOutcome.trim() ? { outcome: moduleOutcome.trim() } : {}),
+        }),
       });
       setModuleTitle('');
+      setModuleOutcome('');
       await onChange();
     } catch (caught) {
       onError(caught instanceof ApiError ? caught.message : 'Could not add the module.');
@@ -198,12 +216,15 @@ function Outline({
 
   return (
     <div className="flex flex-col gap-4">
+      <CourseProfileForm course={course} onSaved={onChange} onError={onError} />
+      <PlacementEditor courseId={course.id} levelCount={Math.max(1, course.modules.length)} />
+      <PhaseProjectForm courseId={course.id} />
       <Card>
         <CardHeader>
           <CardTitle>Add a module</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-3 sm:flex-row" onSubmit={(event) => void addModule(event)}>
+          <form className="flex flex-col gap-3" onSubmit={(event) => void addModule(event)}>
             <Label className="sr-only" htmlFor="module-title">
               Module title
             </Label>
@@ -213,7 +234,15 @@ function Outline({
               value={moduleTitle}
               onChange={(event) => setModuleTitle(event.target.value)}
             />
-            <Button type="submit">Add level</Button>
+            <Input
+              aria-label="Level learning outcome"
+              placeholder="Learning outcome for this level"
+              value={moduleOutcome}
+              onChange={(event) => setModuleOutcome(event.target.value)}
+            />
+            <Button type="submit" className="min-h-11 sm:w-fit">
+              Add level
+            </Button>
           </form>
         </CardContent>
       </Card>
@@ -228,6 +257,7 @@ function Outline({
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {module.outcome ? <p className="text-sm text-muted-foreground">{module.outcome}</p> : null}
               <ol className="flex flex-col gap-2">
                 {module.lessons.map((lesson) => (
                   <li key={lesson.id} className="flex flex-col gap-3 text-sm">
@@ -354,47 +384,6 @@ function QuizBankForm({ lessonId, onError }: { lessonId: string; onError: (messa
       </label>
       <Button type="submit">Add question</Button>
     </form>
-  );
-}
-
-function RosterTable({ roster }: { roster: CourseRoster | null }) {
-  if (!roster || roster.enrollments.length === 0) {
-    return <p className="text-sm text-muted-foreground">No enrollments yet. Payment stays pending until a webhook verifies it.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full min-w-[720px] text-left text-sm">
-        <thead className="border-b border-border text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3 font-medium">Student</th>
-            <th className="px-4 py-3 font-medium">Enrollment</th>
-            <th className="px-4 py-3 font-medium">Payment</th>
-            <th className="px-4 py-3 font-medium">Amount</th>
-            <th className="px-4 py-3 font-medium">Progress</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roster.enrollments.map((entry) => (
-            <tr key={entry.enrollmentId} className="border-b border-border last:border-0">
-              <td className="px-4 py-3">
-                <p className="font-medium">{entry.student.name}</p>
-                <p className="text-muted-foreground">{entry.student.email}</p>
-              </td>
-              <td className="px-4 py-3">{entry.status}</td>
-              <td className="px-4 py-3">
-                {entry.paymentStatus}
-                {entry.paidAt ? <span className="block text-xs text-muted-foreground">{entry.paidAt.slice(0, 10)}</span> : null}
-              </td>
-              <td className="px-4 py-3">{formatIdr(entry.amount)}</td>
-              <td className="px-4 py-3">
-                {entry.completedLessons}/{entry.lessonCount} · {entry.progressPercent}%
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 

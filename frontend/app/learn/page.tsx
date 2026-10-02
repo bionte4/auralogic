@@ -25,6 +25,7 @@ interface EnrollmentCourse {
 
 interface CourseProgress {
   modules: ModuleProgress[];
+  startOrderIndex: number;
 }
 
 interface RewardBadge {
@@ -46,6 +47,7 @@ export default function LearnHomePage() {
   const [catalog, setCatalog] = useState<CourseSummary[] | null>(null);
   const [rewards, setRewards] = useState<RewardsView | null>(null);
   const [modulesByCourse, setModulesByCourse] = useState<Record<string, ModuleProgress[]>>({});
+  const [startByCourse, setStartByCourse] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,10 +69,11 @@ export default function LearnHomePage() {
         const entries = await Promise.all(
           active.map(async (course) => {
             const progress = await apiRequest<CourseProgress>(`/courses/${course.courseId}/progress`);
-            return [course.courseId, progress.modules] as const;
+            return [course.courseId, progress] as const;
           }),
         );
-        setModulesByCourse(Object.fromEntries(entries));
+        setModulesByCourse(Object.fromEntries(entries.map(([courseId, progress]) => [courseId, progress.modules])));
+        setStartByCourse(Object.fromEntries(entries.map(([courseId, progress]) => [courseId, progress.startOrderIndex])));
       })
       .catch((caught: unknown) => {
         setError(caught instanceof ApiError ? caught.message : 'Could not load your courses.');
@@ -87,7 +90,9 @@ export default function LearnHomePage() {
   const percent = overallProgress(courses);
   const activeCourses = courses.filter((course) => course.accessGranted);
   const lessonsReady = activeCourses.every((course) => modulesByCourse[course.courseId] !== undefined);
-  const next = lessonsReady ? continueTarget(courses, (courseId) => modulesByCourse[courseId]) : null;
+  const next = lessonsReady
+    ? continueTarget(courses, (courseId) => modulesByCourse[courseId], (courseId) => startByCourse[courseId] ?? 1)
+    : null;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">

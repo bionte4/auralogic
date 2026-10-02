@@ -17,13 +17,17 @@ import type { UpdateProgressDto } from './dto/update-progress.dto';
 import {
   COURSE_UNAVAILABLE,
   ENROLLMENT_REQUIRED,
+  PLACEMENT_REQUIRED,
   PREVIOUS_LEVEL_INCOMPLETE,
   enrollmentAccessDenial,
 } from './enrollment-access';
 import type { CourseProgressView, LessonProgressView, ModuleProgressView, ProgressRecord } from './progress.types';
 
+export type LessonAccessMode = 'content' | 'write';
+
 const lessonAccessSelect = {
   id: true,
+  orderIndex: true,
   moduleId: true,
   module: {
     select: {
@@ -55,7 +59,11 @@ export class ProgressService {
    * and the course enrollment is active and paid. Staff preview is limited to
    * SUPER_ADMIN and the owning instructor.
    */
-  async assertLessonAccessible(user: AuthenticatedUser, lessonId: string): Promise<void> {
+  async assertLessonAccessible(
+    user: AuthenticatedUser,
+    lessonId: string,
+    mode: LessonAccessMode = 'write',
+  ): Promise<void> {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       select: lessonAccessSelect,
@@ -79,7 +87,17 @@ export class ProgressService {
       throw new ForbiddenException(COURSE_UNAVAILABLE);
     }
 
-    await this.assertActiveEnrollment(user.id, lesson.module.courseId);
+    const openingPreview = mode === 'content' && lesson.orderIndex === 1 && lesson.module.orderIndex === 1;
+    const denial = await this.enrollmentDenial(user.id, lesson.module.courseId);
+    if (openingPreview && denial) {
+      return;
+    }
+    if (denial) {
+      throw new ForbiddenException(denial);
+    }
+    if (await this.placementBlocks(user.id, lesson.module.courseId)) {
+      throw new ForbiddenException(PLACEMENT_REQUIRED);
+    }
     await this.assertPreviousLevelCompleted(user.id, lesson.module.courseId, lesson.module.orderIndex);
   }
 
@@ -141,9 +159,17 @@ export class ProgressService {
     }
 
     const enrollmentActive = enrollmentAccessDenial(enrollment, new Date()) === null;
-    let previousLevelCompleted = true;
+    const placement = await this.prisma.coursePlacement.findUnique({
+      where: { userId_courseId: { userId: user.id, courseId } },
+      select: { startOrderIndex: true },
+    });
+    const questionCount = await this.prisma.placementQuestion.count({ where: { courseId } });
+    const placementRequired = questionCount > 0 && !placement;
+    const startOrderIndex = placement?.startOrderIndex ?? 1;
+    let previousSatisfied = true;
     const modules: ModuleProgressView[] = course.modules.map((module) => {
-      const locked = !enrollmentActive || !previousLevelCompleted;
+      const openedByPlacement = module.orderIndex <= startOrderIndex;
+      const locked = !enrollmentActive || placementRequired || !(previousSatisfied || openedByPlacement);
       const lessons: LessonProgressView[] = module.lessons.map((lesson) => {
         const progress = lesson.progress[0];
         return {
@@ -159,7 +185,7 @@ export class ProgressService {
       });
       const completed =
         !locked && lessons.length > 0 && lessons.every((lesson) => lesson.status === ProgressStatus.COMPLETED);
-      previousLevelCompleted = completed;
+      previousSatisfied = completed || module.orderIndex < startOrderIndex;
       return {
         id: module.id,
         title: module.title,
@@ -170,7 +196,7 @@ export class ProgressService {
       };
     });
 
-    const view = { courseId: course.id, enrollmentActive, modules };
+    const view = { courseId: course.id, enrollmentActive, startOrderIndex, placementRequired, modules };
     await this.cache?.setJson(key, view, 30);
     return view;
   }
@@ -277,7 +303,7 @@ export class ProgressService {
     }
   }
 
-  private async assertActiveEnrollment(userId: string, courseId: string): Promise<void> {
+  private async enrollmentDenial(userId: string, courseId: string): Promise<string | null> {
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
       select: {
@@ -287,10 +313,18 @@ export class ProgressService {
         accessEndsAt: true,
       },
     });
-    const denial = enrollmentAccessDenial(enrollment, new Date());
-    if (denial) {
-      throw new ForbiddenException(denial);
-    }
+    return enrollmentAccessDenial(enrollment, new Date());
+  }
+
+  private async placementBlocks(userId: string, courseId: string): Promise<boolean> {
+    const [placement, questionCount] = await Promise.all([
+      this.prisma.coursePlacement.findUnique({
+        where: { userId_courseId: { userId, courseId } },
+        select: { id: true },
+      }),
+      this.prisma.placementQuestion.count({ where: { courseId } }),
+    ]);
+    return questionCount > 0 && !placement;
   }
 
   private async assertPreviousLevelCompleted(
@@ -298,7 +332,15 @@ export class ProgressService {
     courseId: string,
     orderIndex: number,
   ): Promise<void> {
-    if (orderIndex === 1) {
+    if (orderIndex <= 1) {
+      return;
+    }
+
+    const placement = await this.prisma.coursePlacement.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { startOrderIndex: true },
+    });
+    if (placement && orderIndex <= placement.startOrderIndex) {
       return;
     }
 
@@ -337,6 +379,18 @@ function isCourseProgressView(value: unknown): value is CourseProgressView {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const record = value as { courseId?: unknown; modules?: unknown; enrollmentActive?: unknown };
-  return typeof record.courseId === 'string' && typeof record.enrollmentActive === 'boolean' && Array.isArray(record.modules);
+  const record = value as {
+    courseId?: unknown;
+    modules?: unknown;
+    enrollmentActive?: unknown;
+    startOrderIndex?: unknown;
+    placementRequired?: unknown;
+  };
+  return (
+    typeof record.courseId === 'string' &&
+    typeof record.enrollmentActive === 'boolean' &&
+    typeof record.startOrderIndex === 'number' &&
+    typeof record.placementRequired === 'boolean' &&
+    Array.isArray(record.modules)
+  );
 }

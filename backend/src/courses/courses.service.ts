@@ -22,7 +22,7 @@ import type {
 } from './course.types';
 import type { CreateCourseDto, ListCoursesQueryDto, UpdateCourseDto } from './dto/course.dto';
 import type { CreateLessonDto } from './dto/lesson.dto';
-import type { CreateModuleDto } from './dto/module.dto';
+import type { CreateModuleDto, UpdateModuleDto } from './dto/module.dto';
 
 const instructorSelect = { id: true, name: true } satisfies Prisma.UserSelect;
 
@@ -35,6 +35,9 @@ const courseSummarySelect = {
   status: true,
   publishedAt: true,
   price: true,
+  coverImageUrl: true,
+  phase: true,
+  outcome: true,
   instructorId: true,
   instructor: { select: instructorSelect },
 } satisfies Prisma.CourseSelect;
@@ -57,6 +60,9 @@ export class CoursesService {
         description: dto.description.trim(),
         level: dto.level,
         price: new Prisma.Decimal(dto.price),
+        coverImageUrl: httpsOrNull(dto.coverImageUrl),
+        phase: dto.phase ?? null,
+        outcome: blankToNull(dto.outcome),
         status: CourseStatus.DRAFT,
       },
       select: courseSummarySelect,
@@ -107,12 +113,14 @@ export class CoursesService {
             id: true,
             title: true,
             description: true,
+            outcome: true,
             orderIndex: true,
             lessons: {
               orderBy: { orderIndex: 'asc' },
               select: {
                 id: true,
                 title: true,
+                description: true,
                 type: true,
                 orderIndex: true,
                 passingScore: true,
@@ -165,6 +173,7 @@ export class CoursesService {
     const lessonIds = course.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id));
     const studentIds = course.enrollments.map((enrollment) => enrollment.user.id);
     const completedByStudent = new Map<string, number>();
+    const startByStudent = new Map<string, number>();
     if (lessonIds.length > 0 && studentIds.length > 0) {
       const grouped = await this.prisma.userProgress.groupBy({
         by: ['userId'],
@@ -179,12 +188,53 @@ export class CoursesService {
         completedByStudent.set(row.userId, row._count._all);
       }
     }
+    const classIdsByStudent = new Map<string, string[]>();
+    const projectByStudent = new Map<string, { score: number | null }>();
+    const classes = await this.prisma.courseClass.findMany({
+      where: { courseId },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        members: { select: { userId: true } },
+      },
+    });
+    for (const courseClass of classes) {
+      for (const member of courseClass.members) {
+        const current = classIdsByStudent.get(member.userId) ?? [];
+        current.push(courseClass.id);
+        classIdsByStudent.set(member.userId, current);
+      }
+    }
+    if (studentIds.length > 0) {
+      const placements = await this.prisma.coursePlacement.findMany({
+        where: { courseId, userId: { in: studentIds } },
+        select: { userId: true, startOrderIndex: true },
+      });
+      for (const placement of placements) {
+        startByStudent.set(placement.userId, placement.startOrderIndex);
+      }
+      const project = await this.prisma.phaseProject.findUnique({
+        where: { courseId },
+        select: {
+          submissions: {
+            where: { userId: { in: studentIds } },
+            select: { userId: true, score: true },
+          },
+        },
+      });
+      for (const submission of project?.submissions ?? []) {
+        projectByStudent.set(submission.userId, { score: submission.score });
+      }
+    }
 
     return {
       courseId,
       lessonCount: lessonIds.length,
+      classes: classes.map((courseClass) => ({ id: courseClass.id, name: courseClass.name })),
       enrollments: course.enrollments.map((enrollment) => {
         const completedLessons = completedByStudent.get(enrollment.user.id) ?? 0;
+        const project = projectByStudent.get(enrollment.user.id);
         return {
           enrollmentId: enrollment.id,
           orderId: enrollment.orderId,
@@ -197,6 +247,10 @@ export class CoursesService {
           completedLessons,
           lessonCount: lessonIds.length,
           progressPercent: lessonIds.length === 0 ? 0 : Math.round((completedLessons / lessonIds.length) * 100),
+          startOrderIndex: startByStudent.get(enrollment.user.id) ?? null,
+          classIds: classIdsByStudent.get(enrollment.user.id) ?? [],
+          projectSubmitted: project !== undefined,
+          projectScore: project?.score ?? null,
         };
       }),
     };
@@ -211,6 +265,9 @@ export class CoursesService {
     if (dto.description !== undefined) data.description = dto.description.trim();
     if (dto.level !== undefined) data.level = dto.level;
     if (dto.price !== undefined) data.price = new Prisma.Decimal(dto.price);
+    if (dto.coverImageUrl !== undefined) data.coverImageUrl = httpsOrNull(dto.coverImageUrl);
+    if (dto.phase !== undefined) data.phase = dto.phase;
+    if (dto.outcome !== undefined) data.outcome = blankToNull(dto.outcome);
     if (dto.status !== undefined) {
       data.status = dto.status;
       if (dto.status === CourseStatus.PUBLISHED && !existing.publishedAt) {
@@ -248,6 +305,7 @@ export class CoursesService {
         courseId,
         title: dto.title.trim(),
         description: dto.description?.trim(),
+        outcome: blankToNull(dto.outcome),
         orderIndex,
       },
       select: {
@@ -255,11 +313,42 @@ export class CoursesService {
         courseId: true,
         title: true,
         description: true,
+        outcome: true,
         orderIndex: true,
       },
     });
     await this.cache?.delete(courseStructureKey(courseId));
     return created;
+  }
+
+  async updateModule(
+    user: AuthenticatedUser,
+    courseId: string,
+    moduleId: string,
+    dto: UpdateModuleDto,
+  ): Promise<CreatedModule> {
+    await this.requireManagedCourse(user, courseId);
+    const existing = await this.prisma.module.findFirst({
+      where: { id: moduleId, courseId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Module not found in this course.');
+    }
+    const updated = await this.prisma.module.update({
+      where: { id: moduleId },
+      data: dto.outcome !== undefined ? { outcome: blankToNull(dto.outcome) } : {},
+      select: {
+        id: true,
+        courseId: true,
+        title: true,
+        description: true,
+        outcome: true,
+        orderIndex: true,
+      },
+    });
+    await this.cache?.delete(courseStructureKey(courseId));
+    return updated;
   }
 
   async addLesson(
@@ -367,8 +456,13 @@ function isPublishedCourseDetail(value: unknown): value is CourseDetail {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const record = value as { status?: unknown; title?: unknown; modules?: unknown };
-  return record.status === CourseStatus.PUBLISHED && typeof record.title === 'string' && Array.isArray(record.modules);
+  const record = value as { status?: unknown; title?: unknown; modules?: unknown; coverImageUrl?: unknown };
+  return (
+    record.status === CourseStatus.PUBLISHED &&
+    typeof record.title === 'string' &&
+    Array.isArray(record.modules) &&
+    'coverImageUrl' in record
+  );
 }
 
 function toCourseSummary(course: CourseSummaryRow): CourseSummary {
@@ -381,6 +475,9 @@ function toCourseSummary(course: CourseSummaryRow): CourseSummary {
     status: course.status,
     publishedAt: course.publishedAt,
     price: course.price.toFixed(2),
+    coverImageUrl: course.coverImageUrl,
+    phase: course.phase,
+    outcome: course.outcome,
     instructor: course.instructor,
   };
 }
@@ -389,10 +486,12 @@ function toModuleSummary(module: {
   id: string;
   title: string;
   description: string | null;
+  outcome: string | null;
   orderIndex: number;
   lessons: Array<{
     id: string;
     title: string;
+    description: string | null;
     type: LessonSummary['type'];
     orderIndex: number;
     passingScore: number | null;
@@ -403,16 +502,28 @@ function toModuleSummary(module: {
     id: module.id,
     title: module.title,
     description: module.description,
+    outcome: module.outcome,
     orderIndex: module.orderIndex,
     lessons: module.lessons.map((lesson) => ({
       id: lesson.id,
       title: lesson.title,
+      description: lesson.description,
       type: lesson.type,
       orderIndex: lesson.orderIndex,
       passingScore: lesson.passingScore,
       hasStream: lesson.videoAsset !== null,
     })),
   };
+}
+
+function blankToNull(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function httpsOrNull(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function slugify(title: string): string {

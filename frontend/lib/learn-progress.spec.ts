@@ -24,6 +24,17 @@ const modules: ModuleProgress[] = [
 ];
 
 describe('course player progress', () => {
+  it('starts at the diagnosed level when earlier lessons are still open', () => {
+    const opened = modules.map((module) => ({
+      ...module,
+      locked: false,
+      completed: false,
+      lessons: module.lessons.map((lesson) => ({ ...lesson, locked: false, status: 'NOT_STARTED' as const })),
+    }));
+    expect(firstOpenLesson(opened, 2)?.id).toBe('lesson-2');
+    expect(resolveLessonId(opened, null, 2)).toBe('lesson-2');
+  });
+
   it('opens the first unfinished lesson and ignores a locked id', () => {
     expect(firstOpenLesson(modules)?.id).toBe('lesson-1');
     expect(resolveLessonId(modules, 'lesson-2')).toBe('lesson-1');

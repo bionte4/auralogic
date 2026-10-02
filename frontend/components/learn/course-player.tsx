@@ -3,6 +3,8 @@
 import { Check, ChevronDown, Lock, Menu, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { PhaseProjectPanel } from '@/components/learn/phase-project-panel';
+import { PlacementCheck } from '@/components/learn/placement-check';
 import { SecureVideoPlayer, type SecurePlayerControls } from '@/components/player/SecureVideoPlayer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +35,8 @@ const PRACTICE_PROMPTS = [
 interface CourseProgress {
   courseId: string;
   enrollmentActive: boolean;
+  startOrderIndex: number;
+  placementRequired: boolean;
   modules: ModuleProgress[];
 }
 
@@ -163,7 +167,7 @@ export function CoursePlayer({ courseId }: { courseId: string }) {
     if (!progress) {
       return;
     }
-    const lessonId = resolveLessonId(progress.modules, requestedLessonId);
+    const lessonId = resolveLessonId(progress.modules, requestedLessonId, progress.startOrderIndex);
     if (!lessonId) {
       setDetail(null);
       setPlayback(null);
@@ -531,6 +535,16 @@ export function CoursePlayer({ courseId }: { courseId: string }) {
           </Button>
           <p className="truncate text-sm font-medium">{course.title}</p>
         </div>
+        <PlacementCheck
+          courseId={courseId}
+          placed={!progress.placementRequired}
+          onPlaced={() => {
+            void loadOutline().catch((caught: unknown) => {
+              setError(caught instanceof ApiError ? caught.message : 'Could not refresh this course.');
+            });
+          }}
+        />
+        {progress.enrollmentActive ? <PhaseProjectPanel courseId={courseId} /> : null}
         {!progress.enrollmentActive ? (
           <p className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             This course stays locked until the enrollment is active and the payment is verified.

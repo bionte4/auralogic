@@ -22,8 +22,8 @@ While mail delivery is still in log mode, the school operator reads the link fro
 
 ## Buy a course
 
-1. After signing in, open `/learn`. The **Course catalog** lists every published course.
-2. Choose **Choose course**. Fluentis sends you to the payment page. Access stays closed until the payment notification is verified.
+1. After signing in, open `/learn`. The **Course catalog** lists every published course, with its cover, level, and phase when the instructor set one.
+2. Open a course to read the learning outcome and the level list. The first lesson can play as a free preview. **Choose course** sends you to the payment page. Access stays closed until the payment notification is verified.
 3. Finish payment at Midtrans. Access appears after Midtrans notifies Fluentis. Returning to the site from the bank page does not unlock the course by itself.
 4. A course that is still unpaid stays closed.
 
@@ -36,6 +36,10 @@ The home of the student area is `/learn`.
 - The welcome area shows your name, XP, streak, and progress.
 - **Continue learning** returns to the lesson you were on.
 - Each course card shows progress. A locked course cannot be opened.
+
+If the course has a placement check, answer it before the lessons open. The result is the level you start on. You can still review earlier levels, and the server still refuses a level that comes after an unfinished one.
+
+The catalog can be narrowed by phase, level, and price. After every lesson in a course is complete, the phase project opens. Submit the writing, or the transcript of what you said. The teacher scores it, and that score is the report evidence.
 
 Inside a course:
 

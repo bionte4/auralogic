@@ -23,6 +23,8 @@ export interface ModuleProgressView {
 export interface CourseProgressView {
   courseId: string;
   enrollmentActive: boolean;
+  startOrderIndex: number;
+  placementRequired: boolean;
   modules: ModuleProgressView[];
 }
 

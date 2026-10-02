@@ -5,6 +5,7 @@ export const ACCESS_NOT_STARTED = 'Course access has not started.';
 export const ACCESS_EXPIRED = 'Course access has expired.';
 export const PREVIOUS_LEVEL_INCOMPLETE =
   'Complete every lesson in the previous level before opening this lesson.';
+export const PLACEMENT_REQUIRED = 'Complete the placement check before opening this level.';
 export const COURSE_UNAVAILABLE = 'This course is not available.';
 
 export interface EnrollmentAccess {

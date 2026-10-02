@@ -9,7 +9,7 @@ import {
 } from '@prisma/client';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import type { PrismaService } from '../prisma/prisma.service';
-import { ENROLLMENT_REQUIRED, PREVIOUS_LEVEL_INCOMPLETE } from './enrollment-access';
+import { ENROLLMENT_REQUIRED, PLACEMENT_REQUIRED, PREVIOUS_LEVEL_INCOMPLETE } from './enrollment-access';
 import type { ScoringService } from '../scoring/scoring.service';
 import { ProgressService } from './progress.service';
 
@@ -34,6 +34,7 @@ function lessonAt(orderIndex: number, status: CourseStatus = CourseStatus.PUBLIS
   return {
     id: LESSON_ID,
     moduleId: 'module-current',
+    orderIndex: 1,
     module: {
       id: 'module-current',
       orderIndex,
@@ -64,6 +65,8 @@ describe('ProgressService sequential access', () => {
     enrollment: { findUnique: jest.fn() },
     userProgress: { count: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
     course: { findUnique: jest.fn() },
+    coursePlacement: { findUnique: jest.fn() },
+    placementQuestion: { count: jest.fn() },
   };
   const scoring = { recordQuizAttempt: jest.fn(), awardCompletion: jest.fn() };
   const service = new ProgressService(prisma as unknown as PrismaService, scoring as unknown as ScoringService);
@@ -71,6 +74,8 @@ describe('ProgressService sequential access', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     prisma.quizQuestion.count.mockResolvedValue(0);
+    prisma.placementQuestion.count.mockResolvedValue(0);
+    prisma.coursePlacement.findUnique.mockResolvedValue(null);
   });
 
   it('allows level 1 when the student has an active paid enrollment', async () => {
@@ -120,6 +125,35 @@ describe('ProgressService sequential access', () => {
     prisma.module.findUnique.mockResolvedValue({ id: 'module-1', lessons: [] });
 
     await expect(service.assertLessonAccessible(student, LESSON_ID)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('plays the opening lesson without enrollment and still blocks progress writes', async () => {
+    prisma.lesson.findUnique.mockResolvedValue(lessonAt(1));
+    prisma.enrollment.findUnique.mockResolvedValue(null);
+
+    await expect(service.assertLessonAccessible(student, LESSON_ID, 'content')).resolves.toBeUndefined();
+    await expect(service.assertLessonAccessible(student, LESSON_ID, 'write')).rejects.toMatchObject({
+      message: ENROLLMENT_REQUIRED,
+    });
+  });
+
+  it('opens the diagnosed start level before earlier levels are complete', async () => {
+    prisma.lesson.findUnique.mockResolvedValue(lessonAt(3));
+    prisma.enrollment.findUnique.mockResolvedValue(activeEnrollment());
+    prisma.coursePlacement.findUnique.mockResolvedValue({ id: 'placement-1', startOrderIndex: 3 });
+
+    await expect(service.assertLessonAccessible(student, LESSON_ID)).resolves.toBeUndefined();
+    expect(prisma.module.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('keeps every lesson locked until the placement check is stored', async () => {
+    prisma.lesson.findUnique.mockResolvedValue(lessonAt(1));
+    prisma.enrollment.findUnique.mockResolvedValue(activeEnrollment());
+    prisma.placementQuestion.count.mockResolvedValue(2);
+
+    await expect(service.assertLessonAccessible(student, LESSON_ID)).rejects.toMatchObject({
+      message: PLACEMENT_REQUIRED,
+    });
   });
 
   it('rejects lesson content when enrollment is missing', async () => {
@@ -287,5 +321,66 @@ describe('ProgressService sequential access', () => {
 
     expect(progress.modules[0]).toMatchObject({ locked: false, completed: true });
     expect(progress.modules[1]).toMatchObject({ locked: false, completed: false });
+  });
+
+  it('unlocks levels up to the placement and still locks the level after it', async () => {
+    prisma.coursePlacement.findUnique.mockResolvedValue({ startOrderIndex: 2 });
+    prisma.course.findUnique.mockResolvedValue({
+      id: COURSE_ID,
+      status: CourseStatus.PUBLISHED,
+      enrollments: [activeEnrollment()],
+      modules: [
+        {
+          id: 'module-1',
+          title: 'Level 1',
+          orderIndex: 1,
+          lessons: [
+            {
+              id: 'lesson-a',
+              title: 'Greetings',
+              type: LessonType.VIDEO,
+              orderIndex: 1,
+              progress: [],
+            },
+          ],
+        },
+        {
+          id: 'module-2',
+          title: 'Level 2',
+          orderIndex: 2,
+          lessons: [
+            {
+              id: 'lesson-b',
+              title: 'Travel',
+              type: LessonType.READING,
+              orderIndex: 1,
+              progress: [],
+            },
+          ],
+        },
+        {
+          id: 'module-3',
+          title: 'Level 3',
+          orderIndex: 3,
+          lessons: [
+            {
+              id: 'lesson-c',
+              title: 'Review',
+              type: LessonType.QUIZ,
+              orderIndex: 1,
+              progress: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    const progress = await service.getCourseProgress(student, COURSE_ID);
+
+    expect(progress.startOrderIndex).toBe(2);
+    expect(progress.placementRequired).toBe(false);
+    expect(progress.modules[0]).toMatchObject({ locked: false });
+    expect(progress.modules[1]).toMatchObject({ locked: false });
+    expect(progress.modules[2]).toMatchObject({ locked: true });
   });
 });

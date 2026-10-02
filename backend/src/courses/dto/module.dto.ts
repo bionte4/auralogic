@@ -10,4 +10,16 @@ export class CreateModuleDto {
   @IsString()
   @MaxLength(5000)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  outcome?: string;
+}
+
+export class UpdateModuleDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  outcome?: string | null;
 }
