@@ -1,0 +1,143 @@
+# Fluentis LMS — local or VPS stack.
+#
+#   cp deploy/env.example .env
+#   # set JWT_SECRET (32+ chars) and the public origins
+#   docker compose up -d --build
+#
+# Published ports bind to 127.0.0.1 so only Nginx or cloudflared on this machine
+# can reach the apps. Postgres and Redis stay on the fluentis network.
+#
+# NEXT_PUBLIC_API_URL is baked into the frontend image. Rebuild the frontend
+# after changing it: docker compose up -d --build frontend
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fluentis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluentis}
+      POSTGRES_DB: ${POSTGRES_DB:-fluentis}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fluentis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fluentis} -d ${POSTGRES_DB:-fluentis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - fluentis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Inside the network the database host is the service name, not localhost.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fluentis}:${POSTGRES_PASSWORD:-fluentis}@postgres:5432/${POSTGRES_DB:-fluentis}?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: "3001"
+      # Public browser origin. Production example: https://app.controldesk.site
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-replace-with-a-secret-of-at-least-32-chars}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      # true when the site is served over HTTPS (Nginx TLS or Cloudflare).
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-midtrans}
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-SB-Mid-server-change-this-key}
+      MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}
+      MIDTRANS_QRIS_ACQUIRER: ${MIDTRANS_QRIS_ACQUIRER:-gopay}
+      XENDIT_SECRET_KEY: ${XENDIT_SECRET_KEY:-}
+      XENDIT_WEBHOOK_TOKEN: ${XENDIT_WEBHOOK_TOKEN:-}
+      VIDEO_MODE: ${VIDEO_MODE:-mock}
+      MOCK_HLS_MANIFEST_URL: ${MOCK_HLS_MANIFEST_URL:-https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_STREAM_CUSTOMER_CODE: ${CLOUDFLARE_STREAM_CUSTOMER_CODE:-}
+      CLOUDFLARE_STREAM_KEY_ID: ${CLOUDFLARE_STREAM_KEY_ID:-}
+      CLOUDFLARE_STREAM_PRIVATE_KEY: ${CLOUDFLARE_STREAM_PRIVATE_KEY:-}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-log}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      ATTACHMENT_STORAGE: ${ATTACHMENT_STORAGE:-local}
+      ATTACHMENT_LOCAL_DIR: /app/storage/attachments
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_REGION: ${AWS_S3_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT:-}
+    volumes:
+      - attachment_data:/app/storage/attachments
+    ports:
+      - "127.0.0.1:3001:3001"
+    networks:
+      - fluentis
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser-reachable API URL, including the /api prefix.
+        # Production example: https://api.controldesk.site/api
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - fluentis
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+networks:
+  fluentis:
+    name: fluentis
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  attachment_data:

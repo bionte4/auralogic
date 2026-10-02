@@ -11,6 +11,7 @@ import { CacheModule } from './cache/cache.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { CoursesModule } from './courses/courses.module';
 import { FinanceModule } from './finance/finance.module';
+import { HealthController } from './health/health.controller';
 import { LessonsModule } from './lessons/lessons.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -39,6 +40,7 @@ import { VideoModule } from './video/video.module';
     ScoringModule,
     VideoModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },

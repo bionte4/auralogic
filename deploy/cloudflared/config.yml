@@ -1,0 +1,29 @@
+# Cloudflare Tunnel — alternative to opening 80/443 on the VPS.
+# Docker still binds the apps to 127.0.0.1:3000 and 127.0.0.1:3001.
+#
+#   cloudflared tunnel login
+#   cloudflared tunnel create fluentis
+#   cloudflared tunnel route dns fluentis app.controldesk.site
+#   cloudflared tunnel route dns fluentis api.controldesk.site
+#   cloudflared tunnel route dns fluentis fluentis.site
+#   cloudflared tunnel route dns fluentis api.fluentis.site
+#   cloudflared tunnel --config deploy/cloudflared/config.yml run
+#
+# Public HTTPS is terminated by Cloudflare. Set COOKIE_SECURE=true.
+# FRONTEND_ORIGIN=https://app.controldesk.site  (or https://fluentis.site)
+# NEXT_PUBLIC_API_URL=https://api.controldesk.site/api  (rebuild the frontend)
+# Point Midtrans/Xendit webhooks at https://api.<domain>/api/payments/...
+
+tunnel: REPLACE_WITH_TUNNEL_UUID
+credentials-file: /etc/cloudflared/REPLACE_WITH_TUNNEL_UUID.json
+
+ingress:
+  - hostname: app.controldesk.site
+    service: http://127.0.0.1:3000
+  - hostname: fluentis.site
+    service: http://127.0.0.1:3000
+  - hostname: api.controldesk.site
+    service: http://127.0.0.1:3001
+  - hostname: api.fluentis.site
+    service: http://127.0.0.1:3001
+  - service: http_status:404
