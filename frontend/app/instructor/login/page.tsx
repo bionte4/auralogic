@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { BrandMark } from '@/components/brand-mark';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,9 +67,7 @@ export default function InstructorLoginPage() {
           }}
         />
         <div className="relative flex w-full items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-semibold tracking-tight text-primary-foreground">
-            Fl
-          </span>
+          <BrandMark className="h-10 w-10" />
           <span className="text-sm font-medium tracking-tight">Fluentis</span>
           <div className="ml-auto">
             <ThemeSwitcher />
