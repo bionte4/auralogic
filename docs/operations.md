@@ -60,6 +60,7 @@ FRONTEND_ORIGIN=https://fluentis.web.id
 NEXT_PUBLIC_API_URL=https://api.fluentis.web.id/api
 COOKIE_SAMESITE=lax
 COOKIE_SECURE=true
+COOKIE_DOMAIN=.fluentis.web.id
 POSTGRES_PASSWORD=<openssl rand -hex 24>
 JWT_SECRET=<openssl rand -hex 32>
 ```

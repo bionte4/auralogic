@@ -14,6 +14,7 @@ export function createCsrfToken(): string {
 
 export function setAuthCookies(response: Response, env: AppEnv, accessToken: string, csrfToken: string): void {
   const base = cookieBase(env);
+  clearHostOnlyCookies(response, base);
   response.cookie(ACCESS_COOKIE, accessToken, { ...base, httpOnly: true });
   response.cookie(CSRF_COOKIE, csrfToken, { ...base, httpOnly: false });
 }
@@ -54,5 +55,13 @@ function cookieBase(env: AppEnv): CookieOptions {
     secure: env.cookieSecure,
     path: '/',
     maxAge: TOKEN_MAX_AGE_MS,
+    ...(env.cookieDomain ? { domain: env.cookieDomain } : {}),
   };
+}
+
+function clearHostOnlyCookies(response: Response, base: CookieOptions): void {
+  const hostOnly = { ...base };
+  delete hostOnly.domain;
+  response.clearCookie(ACCESS_COOKIE, { ...hostOnly, httpOnly: true });
+  response.clearCookie(CSRF_COOKIE, { ...hostOnly, httpOnly: false });
 }

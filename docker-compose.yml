@@ -65,6 +65,9 @@ services:
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       # true when the site is served over HTTPS (Nginx TLS or Cloudflare).
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Share the session with the site when the API is on another subdomain.
+      # Production: .fluentis.web.id  Localhost: leave empty.
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-midtrans}
       MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-SB-Mid-server-change-this-key}
       MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}

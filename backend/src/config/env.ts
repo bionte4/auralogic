@@ -13,6 +13,7 @@ export interface AppEnv {
   xenditWebhookToken: string | null;
   cookieSameSite: 'lax' | 'strict' | 'none';
   cookieSecure: boolean;
+  cookieDomain: string | null;
   mailProvider: 'log' | 'resend';
   resendApiKey: string | null;
   mailFrom: string | null;
@@ -84,6 +85,7 @@ export function readAppEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
 
   const cookieSameSite = readSameSite(source.COOKIE_SAMESITE);
   const cookieSecure = source.COOKIE_SECURE?.trim().toLowerCase() === 'true' || cookieSameSite === 'none';
+  const cookieDomain = readCookieDomain(source.COOKIE_DOMAIN, parsedOrigin.hostname);
   if (cookieSameSite === 'none' && parsedOrigin.protocol !== 'https:') {
     throw new Error('COOKIE_SAMESITE=none requires an https FRONTEND_ORIGIN.');
   }
@@ -103,6 +105,7 @@ export function readAppEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     xenditWebhookToken,
     cookieSameSite,
     cookieSecure,
+    cookieDomain,
     mailProvider: mail.provider,
     resendApiKey: mail.apiKey,
     mailFrom: mail.from,
@@ -126,6 +129,22 @@ function readMailConfig(source: NodeJS.ProcessEnv): { provider: 'log' | 'resend'
     throw new Error('MAIL_FROM must be a sender address when MAIL_PROVIDER is resend.');
   }
   return { provider, apiKey, from };
+}
+
+function readCookieDomain(value: string | undefined, frontendHost: string): string | null {
+  const raw = value?.trim() ?? '';
+  if (!raw) {
+    return null;
+  }
+  const domain = (raw.startsWith('.') ? raw.slice(1) : raw).toLowerCase();
+  if (!/^[a-z0-9.-]+$/.test(domain) || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) {
+    throw new Error('COOKIE_DOMAIN must be a hostname such as .fluentis.web.id.');
+  }
+  const host = frontendHost.toLowerCase();
+  if (host !== domain && !host.endsWith(`.${domain}`)) {
+    throw new Error('COOKIE_DOMAIN must be the parent of FRONTEND_ORIGIN.');
+  }
+  return `.${domain}`;
 }
 
 function readSameSite(value: string | undefined): 'lax' | 'strict' | 'none' {
