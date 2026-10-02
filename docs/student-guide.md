@@ -22,8 +22,8 @@ While mail delivery is still in log mode, the school operator reads the link fro
 
 ## Buy a course
 
-1. From the home page, choose **Explore courses**, or open `/learn` after signing in.
-2. Open a course and check out. The available channel is card redirect or QRIS, depending on what the school enabled.
+1. After signing in, open `/learn`. The **Course catalog** lists every published course.
+2. Choose **Choose course**. Fluentis sends you to the payment page. Access stays closed until the payment notification is verified.
 3. Finish payment at Midtrans. Access appears after Midtrans notifies Fluentis. Returning to the site from the bank page does not unlock the course by itself.
 4. A course that is still unpaid stays closed.
 

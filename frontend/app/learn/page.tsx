@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CertificateGallery } from '@/components/learn/certificate-gallery';
+import { CourseCatalog } from '@/components/learn/course-catalog';
 import { RewardsPanel } from '@/components/learn/rewards-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ApiError, apiRequest } from '@/lib/api';
 import { continueTarget, overallProgress, type ModuleProgress } from '@/lib/learn-progress';
+import type { CourseSummary } from '@/lib/courses';
 import { readSession } from '@/lib/session';
 
 interface EnrollmentCourse {
@@ -41,6 +43,7 @@ interface RewardsView {
 export default function LearnHomePage() {
   const [name, setName] = useState<string | null>(null);
   const [courses, setCourses] = useState<EnrollmentCourse[] | null>(null);
+  const [catalog, setCatalog] = useState<CourseSummary[] | null>(null);
   const [rewards, setRewards] = useState<RewardsView | null>(null);
   const [modulesByCourse, setModulesByCourse] = useState<Record<string, ModuleProgress[]>>({});
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +54,15 @@ export default function LearnHomePage() {
     if (!current) {
       return;
     }
-    void Promise.all([apiRequest<EnrollmentCourse[]>('/me/enrollments'), apiRequest<RewardsView>('/me/rewards')])
-      .then(async ([nextCourses, nextRewards]) => {
+    void Promise.all([
+      apiRequest<EnrollmentCourse[]>('/me/enrollments'),
+      apiRequest<RewardsView>('/me/rewards'),
+      apiRequest<CourseSummary[]>('/courses'),
+    ])
+      .then(async ([nextCourses, nextRewards, nextCatalog]) => {
         setCourses(nextCourses);
         setRewards(nextRewards);
+        setCatalog(nextCatalog);
         const active = nextCourses.filter((course) => course.accessGranted);
         const entries = await Promise.all(
           active.map(async (course) => {
@@ -72,7 +80,7 @@ export default function LearnHomePage() {
   if (error) {
     return <p className="px-6 py-10 text-sm text-destructive">{error}</p>;
   }
-  if (!courses || !rewards) {
+  if (!courses || !rewards || !catalog) {
     return <p className="px-6 py-10 text-sm text-muted-foreground">Loading your courses…</p>;
   }
 
@@ -127,6 +135,8 @@ export default function LearnHomePage() {
         </div>
       </section>
 
+      <CourseCatalog courses={catalog} enrollments={courses} />
+
       <Card>
         <CardHeader>
           <CardTitle>Continue learning</CardTitle>
@@ -144,13 +154,13 @@ export default function LearnHomePage() {
               </Button>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">No open lesson yet. Finish payment to start a course.</p>
+            <p className="text-sm text-muted-foreground">Choose a course from the catalog. Lessons open after payment is verified.</p>
           )}
         </CardContent>
       </Card>
 
       {courses.length === 0 ? (
-        <p className="text-sm text-muted-foreground">You have no enrollments yet.</p>
+        <p className="text-sm text-muted-foreground">You have not joined a course yet.</p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {courses.map((course) => {
