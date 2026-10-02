@@ -482,7 +482,7 @@ export function CoursePlayer({ courseId }: { courseId: string }) {
       <aside
         ref={bindDesktopOutline}
         onScroll={rememberOutlineScroll}
-        className={`sticky top-[4.25rem] hidden max-h-[calc(100vh-4.25rem)] overflow-y-auto border-r border-border ${curriculumOpen ? 'md:block' : ''}`}
+        className={`sticky top-16 hidden max-h-[calc(100vh-4rem)] overflow-y-auto border-r border-border ${curriculumOpen ? 'md:block' : ''}`}
       >
         <CourseOutline {...outlineProps} />
       </aside>
@@ -516,7 +516,7 @@ export function CoursePlayer({ courseId }: { courseId: string }) {
             {curriculumOpen ? 'Hide curriculum' : 'Show curriculum'}
           </Button>
         </div>
-        <div className="sticky top-[4.25rem] z-10 -mx-4 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:hidden">
+        <div className="sticky top-16 z-10 -mx-4 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:hidden">
           <Button
             ref={outlineButtonRef}
             type="button"
@@ -575,7 +575,7 @@ export function CoursePlayer({ courseId }: { courseId: string }) {
           <p className="text-sm text-muted-foreground">Choose an open lesson. Locked lessons stay closed until the previous level is complete.</p>
         )}
       </section>
-      <aside className="sticky top-[4.25rem] hidden max-h-[calc(100vh-4.25rem)] overflow-y-auto border-l border-border bg-card lg:block">
+      <aside className="sticky top-16 hidden max-h-[calc(100vh-4rem)] overflow-y-auto border-l border-border bg-card lg:block">
         {study('wide')}
       </aside>
     </div>

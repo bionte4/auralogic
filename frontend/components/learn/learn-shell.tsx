@@ -39,11 +39,15 @@ export function LearnShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Fluentis</p>
-            <p className="truncate text-sm font-medium">{session.email}</p>
-          </div>
+        <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
+          <Link href="/learn" className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground" aria-hidden="true">
+              Fl
+            </span>
+            <span className="truncate text-sm font-semibold tracking-tight">Fluentis</span>
+            <span className="hidden h-4 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
+            <span className="truncate text-sm text-muted-foreground">{session.email}</span>
+          </Link>
           <nav className="flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
             <Button variant="ghost" size="sm" className="min-h-11" asChild>
