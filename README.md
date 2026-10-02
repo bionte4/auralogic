@@ -17,6 +17,7 @@ The web app and the API are separate services.
 - [Students](docs/student-guide.md) covers registration, learning, quizzes, and certificates.
 - [Instructors](docs/instructor-guide.md) covers course building, publishing, and class materials.
 - [Admins](docs/admin-guide.md) covers users, bulk enroll, finance, and settings.
+- [Process flows](docs/process-flow.md) covers accounts, payment, sequential learning, and certificates.
 
 ## Roles
 
