@@ -16,6 +16,7 @@ The web app and the API are separate services.
 - [Operations](docs/operations.md) covers the VPS, environment, HTTPS, payments, backups, and updates.
 - [Students](docs/student-guide.md) covers registration, learning, quizzes, and certificates.
 - [Instructors](docs/instructor-guide.md) covers course building, publishing, and class materials.
+- [Admins](docs/admin-guide.md) covers users, bulk enroll, finance, and settings.
 
 ## Roles
 

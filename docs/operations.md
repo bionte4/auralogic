@@ -146,7 +146,7 @@ bcrypt.hash(process.env.ADMIN_PASSWORD, 12).then((passwordHash) =>
 '
 ```
 
-Sign in at `https://fluentis.web.id/instructor/login`. From **Users**, change a registered student to instructor when a teacher needs a studio account. Keep at least one active super admin.
+Sign in at `https://fluentis.web.id/instructor/login`. Day-to-day admin work is described in the [admin guide](admin-guide.md). Keep at least one active super admin.
 
 ## 8. Updates
 

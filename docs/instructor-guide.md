@@ -46,16 +46,6 @@ After you publish and a student pays:
 
 Changing the order of levels changes who can proceed. Do that before students are in the middle of the course.
 
-## Super admin extras
+## Super admin
 
-These links are on the instructor header only for a super admin.
-
-| Page | Use |
-| --- | --- |
-| `/admin/users` | Search accounts, change a student into an instructor, deactivate an account, and enroll a company batch |
-| `/admin/finance` | Gross and net revenue, monthly trend, and the transaction table |
-| `/admin/settings` | Store SMTP, AI, Cloudflare, and payment settings, then run a connection test |
-
-Batch enrollment grants course access without a payment row, so it does not increase reported revenue.
-
-Settings saved in the admin screen are kept for the operator. The running checkout, mail, and video services still use the server environment file until an operator changes that file and restarts the API. Deactivating the last active super admin is rejected.
+A super admin uses this same sign-in page and then sees **Users**, **Finance**, and **Settings**. The steps for those screens are in the [admin guide](admin-guide.md).
