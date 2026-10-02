@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  [data-theme='dark'] {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 6% 10%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --destructive: 0 72% 68%;
+    --destructive-foreground: 0 0% 10%;
+    --success: 152 60% 52%;
+    --border: 240 4% 18%;
+    --input: 240 4% 18%;
+    --ring: 240 5% 65%;
+    --radius: 0.5rem;
+  }
+
+  [data-theme='light'] {
+    --background: 40 33% 98%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+    --primary: 240 10% 12%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 40 16% 93%;
+    --secondary-foreground: 240 10% 12%;
+    --muted: 40 16% 93%;
+    --muted-foreground: 240 5% 32%;
+    --destructive: 0 72% 38%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 64% 26%;
+    --border: 40 10% 84%;
+    --input: 40 10% 84%;
+    --ring: 240 5% 36%;
+  }
+
+  [data-theme='navy'] {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+    --card: 222 42% 13%;
+    --card-foreground: 210 40% 98%;
+    --primary: 199 89% 72%;
+    --primary-foreground: 222 47% 10%;
+    --secondary: 222 34% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 34% 18%;
+    --muted-foreground: 215 20% 74%;
+    --destructive: 0 80% 72%;
+    --destructive-foreground: 222 47% 10%;
+    --success: 152 62% 58%;
+    --border: 222 28% 24%;
+    --input: 222 28% 24%;
+    --ring: 199 89% 72%;
+  }
+}
+
+[data-theme='light'] .text-emerald-300,
+[data-theme='light'] .text-emerald-400,
+[data-theme='navy'] .text-emerald-300 {
+  color: hsl(var(--success));
+}
+
+[data-theme='light'] .bg-emerald-400 {
+  background-color: hsl(var(--success));
+}
+
+[data-theme='light'] .text-red-300,
+[data-theme='navy'] .text-red-300 {
+  color: hsl(var(--destructive));
+}
+
+@keyframes watermark-drift {
+  0% {
+    top: 12%;
+    left: 8%;
+  }
+  25% {
+    top: 20%;
+    left: 58%;
+  }
+  50% {
+    top: 68%;
+    left: 46%;
+  }
+  75% {
+    top: 54%;
+    left: 10%;
+  }
+  100% {
+    top: 12%;
+    left: 8%;
+  }
+}
+
+.watermark-drift {
+  position: absolute;
+  margin: 0;
+  animation: watermark-drift 18s linear infinite;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  user-select: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  [data-testid='secure-video-player'] .video-js .vjs-control {
+    width: 3rem;
+  }
+}

@@ -1,0 +1,24 @@
+# .cursorrules - Enterprise English LMS Architecture
+
+## Tech Stack & Architecture
+- **Architecture**: Decoupled Monorepo / Multi-Service (Frontend & Backend terpisah domain/port)
+- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS, Shadcn UI, Video.js (HLS Player)
+- **Backend**: NestJS, TypeScript, Prisma ORM, PostgreSQL, JWT Authentication
+- **Payment**: Midtrans / Xendit (webhook), termasuk QRIS. Akses course hanya setelah webhook terverifikasi.
+- **Video (Option B)**: Cloudflare Stream saja. Storage ~$5 / 1.000 menit tersimpan / bulan. Delivery ~$1 / 1.000 menit ditonton, tanpa egress. HLS AES-128, signed URL, `requireSignedURLs`. Watermark email/ID dirender oleh player.
+  - Lokal: `VIDEO_MODE=mock`. Endpoint playback NestJS mengembalikan manifest `.m3u8` uji hanya setelah guard prasyarat. Produksi: `VIDEO_MODE=cloudflare`.
+
+## Core Business Rules & Guardrails
+1. **Sequential Learning (Prerequisite Enforcement)**:
+   - Akses ke Lesson/Module N *wajib* memvalidasi apakah Module N-1 statusnya sudah `completed` oleh user.
+   - Backend harus menolak akses dengan HTTP status `403 Forbidden` jika prasyarat belum terpenuhi, terlepas dari manipulasi client-side.
+2. **Video Security**:
+   - Dilarang menyimpan file `.mp4` mentah. Video wajib di-stream menggunakan protokol HLS (.m3u8) terenkripsi AES-128.
+   - Player video wajib menonaktifkan klik kanan dan shortcut download, serta mendukung *dynamic user watermark* (email/ID student berjalan transparan di atas video).
+3. **Role-Based Access Control (RBAC)**:
+   - Pisahkan hak akses dengan jelas: `STUDENT`, `INSTRUCTOR`, dan `SUPER_ADMIN`.
+   - Instructor dapat mengunggah materi dan membuat course melalui dedicated dashboard.
+4. **Code Quality & Vibe Coding Discipline**:
+   - Gunakan strict TypeScript typing (hindari tipe `any`).
+   - Terapkan error handling yang komprehensif pada setiap API endpoint dan Server Actions.
+   - Pastikan konfigurasi CORS di backend NestJS aman dan hanya menerima request dari origin frontend yang sah.

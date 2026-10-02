@@ -1,0 +1,1 @@
+export const ATTACHMENT_STORE = Symbol('ATTACHMENT_STORE');

@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+.next/
+out/
+storage/
+coverage/
+*.tsbuildinfo
+.DS_Store
+masterprompt.md

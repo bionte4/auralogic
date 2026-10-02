@@ -1,0 +1,420 @@
+// Fluentis — Enterprise English LMS (NestJS + PostgreSQL)
+// Frontend Next.js lives in a separate service and never talks to this database.
+//
+// Sequential learning (API must return 403 when this fails):
+//   A lesson in module N is reachable only when every lesson in the module
+//   with the same courseId and orderIndex = N - 1 has UserProgress.status =
+//   COMPLETED for that user. orderIndex starts at 1; module 1 has no predecessor.
+//   The lookup key is @@unique([courseId, orderIndex]) on Module and
+//   @@unique([userId, lessonId]) on UserProgress.
+//   Access also requires an Enrollment with status ACTIVE, paymentStatus PAID,
+//   and now() inside [accessStartsAt, accessEndsAt] (null accessEndsAt = open-ended).
+//   ACTIVE is granted only by a verified Midtrans or Xendit webhook whose amount
+//   matches the Payment row. The browser return URL never grants access.
+//
+// Video:
+//   No column stores a raw .mp4 object. Playback identity lives on VideoAsset
+//   as a provider asset id. The API mints a short-lived signed HLS (.m3u8) URL.
+//   VideoEncryption has a single value, AES_128. The player watermark is
+//   User.email + User.id and is applied at playback time, not stored here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// .cursorrules RBAC. SUPER_ADMIN is the platform admin role.
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  SUPER_ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CefrLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum LessonType {
+  VIDEO
+  READING
+  QUIZ
+}
+
+enum StreamProvider {
+  CLOUDFLARE_STREAM
+}
+
+/// HLS AES-128 only. Unencrypted or progressive MP4 is not representable.
+enum VideoEncryption {
+  AES_128
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MIDTRANS
+  XENDIT
+}
+
+enum PaymentChannel {
+  REDIRECT
+  QRIS
+}
+
+enum BadgeCode {
+  LEVEL_COMPLETE
+  DISTINCTION
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  name         String
+  role          Role      @default(STUDENT)
+  /// False when an admin has deactivated the account. Login and API tokens stop.
+  active        Boolean   @default(true)
+  xp            Int       @default(0)
+  streakCount   Int       @default(0)
+  /// Calendar date of the last rewarded activity in Asia/Jakarta.
+  lastActiveOn  DateTime? @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  instructedCourses Course[]       @relation("CourseInstructor")
+  enrollments       Enrollment[]
+  progress          UserProgress[]
+  badges            UserBadge[]
+  quizAttempts      QuizAttempt[]
+  certificates      Certificate[]
+  passwordResets    PasswordResetToken[]
+
+  @@index([role])
+  @@map("users")
+}
+
+/// One-time password reset. Only the SHA-256 hash of the link token is stored.
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Course {
+  id           String       @id @default(uuid()) @db.Uuid
+  instructorId String       @db.Uuid
+  title        String
+  slug         String       @unique
+  description  String
+  level        CefrLevel
+  /// Whole IDR amount charged at checkout. The client cannot override it.
+  price        Decimal      @db.Decimal(12, 2)
+  status       CourseStatus @default(DRAFT)
+  publishedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  instructor   User          @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Restrict)
+  modules      Module[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+
+  @@index([instructorId])
+  @@index([status, level])
+  @@map("courses")
+}
+
+model Module {
+  id          String   @id @default(uuid()) @db.Uuid
+  courseId    String   @db.Uuid
+  title       String
+  description String?
+  /// 1-based, unique, and contiguous within the course.
+  /// Module N stays locked until module N - 1 is fully COMPLETED.
+  orderIndex  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@unique([courseId, orderIndex])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String     @id @default(uuid()) @db.Uuid
+  moduleId    String     @db.Uuid
+  title       String
+  description String?
+  type        LessonType
+  /// 1-based position within the parent module.
+  orderIndex  Int
+  /// Set for QUIZ. COMPLETED is valid only when score >= passingScore.
+  passingScore Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  module        Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  videoAsset    VideoAsset?
+  progress      UserProgress[]
+  quizAttempts  QuizAttempt[]
+  quizQuestions QuizQuestion[]
+  attachments   LessonAttachment[]
+
+  @@unique([moduleId, orderIndex])
+  @@map("lessons")
+}
+
+/// Supplementary lesson file. objectKey is a private storage key, never a public URL.
+model LessonAttachment {
+  id          String   @id @default(uuid()) @db.Uuid
+  lessonId    String   @db.Uuid
+  fileName    String
+  contentType String
+  objectKey   String   @unique
+  sizeBytes   Int
+  createdAt   DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@map("lesson_attachments")
+}
+
+/// One row per VIDEO lesson. assetId is an opaque provider id, never a public file URL.
+model VideoAsset {
+  id              String          @id @default(uuid()) @db.Uuid
+  lessonId        String          @unique @db.Uuid
+  provider        StreamProvider
+  assetId         String
+  encryption      VideoEncryption @default(AES_128)
+  durationSeconds Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("video_assets")
+}
+
+/// Question bank for a QUIZ lesson. Delivery order is shuffled per attempt.
+model QuizQuestion {
+  id         String @id @default(uuid()) @db.Uuid
+  lessonId   String @db.Uuid
+  prompt     String
+  /// Stable authoring order. Students receive a shuffled copy.
+  orderIndex Int
+
+  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  choices QuizChoice[]
+
+  @@unique([lessonId, orderIndex])
+  @@map("quiz_questions")
+}
+
+model QuizChoice {
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String  @db.Uuid
+  text       String
+  correct    Boolean
+  orderIndex Int
+
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, orderIndex])
+  @@map("quiz_choices")
+}
+
+model UserProgress {
+  id           String         @id @default(uuid()) @db.Uuid
+  userId       String         @db.Uuid
+  lessonId     String         @db.Uuid
+  status       ProgressStatus @default(NOT_STARTED)
+  /// Latest score, 0–100. Null until the learner submits a quiz.
+  score        Int?
+  attemptCount Int            @default(0)
+  completedAt  DateTime?
+  /// Set once, when XP for this completion has been granted.
+  rewardedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+  @@index([lessonId, status])
+  @@map("user_progress")
+}
+
+model UserBadge {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  code      BadgeCode
+  courseId  String    @db.Uuid
+  /// Module id for LEVEL_COMPLETE, lesson id for DISTINCTION.
+  sourceId  String    @db.Uuid
+  label     String
+  awardedAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code, sourceId])
+  @@index([userId, awardedAt])
+  @@map("user_badges")
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  lessonId  String   @db.Uuid
+  score     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("quiz_attempts")
+}
+
+/// Issued once, when every lesson in the course is COMPLETED.
+model Certificate {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @db.Uuid
+  courseId String   @db.Uuid
+  issuedAt DateTime @default(now())
+  /// PDF rendered from the HTML template when the course is completed.
+  pdfBytes Bytes?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, courseId])
+  @@index([userId, issuedAt])
+  @@map("certificates")
+}
+
+model Enrollment {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  courseId       String           @db.Uuid
+  /// Latest payment order. Historical attempts live on Payment.orderId.
+  orderId        String           @unique
+  status         EnrollmentStatus @default(PENDING)
+  paymentStatus  PaymentStatus    @default(UNPAID)
+  amount         Decimal          @db.Decimal(12, 2)
+  currency       String           @default("IDR") @db.Char(3)
+  providerRef    String?
+  paidAt         DateTime?
+  accessStartsAt DateTime?
+  accessEndsAt   DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  payments Payment[]
+
+  @@unique([userId, courseId])
+  @@index([userId, status])
+  @@index([courseId, paymentStatus])
+  @@map("enrollments")
+}
+
+/// One gateway charge. Webhooks resolve this row by orderId, then grant access.
+model Payment {
+  id           String          @id @default(uuid()) @db.Uuid
+  enrollmentId String          @db.Uuid
+  orderId      String          @unique
+  provider     PaymentProvider
+  channel      PaymentChannel  @default(REDIRECT)
+  amount       Decimal         @db.Decimal(12, 2)
+  currency     String          @default("IDR") @db.Char(3)
+  status       PaymentStatus   @default(PENDING)
+  checkoutUrl  String?
+  /// EMV QRIS payload. Present only when channel is QRIS.
+  qrString     String?         @db.Text
+  providerRef  String?
+  paidAt       DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, status])
+  @@map("payments")
+}
+
+/// Security monitoring. actorId is omitted when the account is unknown, such as a failed login.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  resource  String
+  outcome   String
+  ip        String?
+  detail    String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+/// Platform configuration. Secret fields inside value are sealed before they are stored.
+model Setting {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

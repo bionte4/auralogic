@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fluentis certificate {{certificateId}}</title>
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 297mm;
+        height: 210mm;
+        background: #f4f0e8;
+        color: #1c1917;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .sheet {
+        width: 297mm;
+        height: 210mm;
+        padding: 12mm;
+      }
+
+      .frame {
+        height: 100%;
+        border: 1.4px solid #1c1917;
+        outline: 6px solid #f4f0e8;
+        outline-offset: -8px;
+        padding: 12mm 16mm 10mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        text-align: center;
+      }
+
+      .brand {
+        margin: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.46em;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 38px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+
+      .lead,
+      .bridge {
+        margin: 4mm 0 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        color: #44403c;
+      }
+
+      .name {
+        margin: 5mm 0 0;
+        font-size: 32px;
+        line-height: 1.2;
+      }
+
+      .course {
+        margin: 3mm 0 0;
+        font-size: 24px;
+        line-height: 1.25;
+      }
+
+      .date {
+        margin: 6mm 0 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 13px;
+      }
+
+      .qr {
+        width: 32mm;
+        height: 32mm;
+      }
+
+      .meta {
+        margin: 2mm 0 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.02em;
+        color: #44403c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet">
+      <div class="frame">
+        <p class="brand">FLUENTIS</p>
+        <div>
+          <h1>Certificate of Completion</h1>
+          <p class="lead">This certifies that</p>
+          <p class="name">{{studentName}}</p>
+          <p class="bridge">has completed every module of</p>
+          <p class="course">{{courseName}}</p>
+          <p class="date">{{completionDate}}</p>
+        </div>
+        <div>
+          <img class="qr" src="{{qrCode}}" alt="Verification QR code" />
+          <p class="meta">Certificate ID {{certificateId}}</p>
+          <p class="meta">{{verifyUrl}}</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
