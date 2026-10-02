@@ -64,6 +64,13 @@ export class PaymentsController {
 
   @Public()
   @SkipThrottle()
+  @Get('payments/midtrans/notification')
+  midtransEndpoint(): { status: 'ok'; accept: 'POST' } {
+    return { status: 'ok', accept: 'POST' };
+  }
+
+  @Public()
+  @SkipThrottle()
   @Post('payments/midtrans/notification')
   @HttpCode(HttpStatus.OK)
   async midtrans(@Req() request: RawBodyRequest<Request>): Promise<WebhookAck> {
