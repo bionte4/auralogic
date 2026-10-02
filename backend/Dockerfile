@@ -4,6 +4,11 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
+# OpenSSL 3 must be present before `prisma generate`, or the client is built
+# for OpenSSL 1.1 and the Bookworm runtime refuses to start.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY prisma ./prisma
