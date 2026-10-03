@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'Fluentis',
-  description: 'Master professional English with sequential lessons and encrypted video.',
+  description: 'Choose an English course for your school phase, then learn one level at a time.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

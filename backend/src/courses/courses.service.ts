@@ -19,6 +19,7 @@ import type {
   CreatedModule,
   LessonSummary,
   ModuleSummary,
+  PublicCourseCard,
 } from './course.types';
 import type { CreateCourseDto, ListCoursesQueryDto, UpdateCourseDto } from './dto/course.dto';
 import type { CreateLessonDto } from './dto/lesson.dto';
@@ -96,6 +97,46 @@ export class CoursesService {
       take: 100,
     });
     return courses.map(toCourseSummary);
+  }
+
+  async listPublished(): Promise<PublicCourseCard[]> {
+    const courses = await this.prisma.course.findMany({
+      where: { status: CourseStatus.PUBLISHED },
+      select: {
+        ...courseSummarySelect,
+        updatedAt: true,
+        modules: {
+          orderBy: { orderIndex: 'asc' as const },
+          select: {
+            outcome: true,
+            lessons: {
+              select: { videoAsset: { select: { durationSeconds: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 12,
+    });
+    return courses.map((course) => {
+      const lessons = course.modules.flatMap((module) => module.lessons);
+      const seconds = lessons.reduce((total, lesson) => total + (lesson.videoAsset?.durationSeconds ?? 0), 0);
+      const highlights = course.modules
+        .map((module) => module.outcome?.trim() ?? '')
+        .filter((outcome) => outcome.length > 0)
+        .slice(0, 3);
+      return {
+        ...toCourseSummary(course),
+        lessonCount: lessons.length,
+        durationMinutes: Math.round(seconds / 60),
+        updatedAt: course.updatedAt,
+        highlights,
+      };
+    });
+  }
+
+  async getPublished(courseId: string): Promise<CourseDetail> {
+    return this.getById(publicReader, courseId);
   }
 
   async getById(user: AuthenticatedUser, courseId: string): Promise<CourseDetail> {
@@ -525,6 +566,13 @@ function httpsOrNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? '';
   return trimmed.length > 0 ? trimmed : null;
 }
+
+const publicReader: AuthenticatedUser = {
+  id: '00000000-0000-4000-8000-000000000000',
+  email: 'public@fluentis.local',
+  name: 'Public',
+  role: Role.STUDENT,
+};
 
 function slugify(title: string): string {
   const slug = title

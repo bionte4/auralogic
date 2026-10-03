@@ -22,8 +22,8 @@ While mail delivery is still in log mode, the school operator reads the link fro
 
 ## Buy a course
 
-1. After signing in, open `/learn`. The **Course catalog** lists every published course, with its cover, level, and phase when the instructor set one.
-2. Open a course to read the learning outcome and the level list. The first lesson can play as a free preview. **Choose course** sends you to the payment page. Access stays closed until the payment notification is verified.
+1. The public homepage lists published courses before you sign in. Open a course to read the outcome and the level list. **Choose course** asks you to sign in, then sends you to payment. Access stays closed until the payment notification is verified.
+2. After you sign in, `/learn` still lists the catalog. The first lesson of a course you have not paid for can play as a free preview.
 3. Finish payment at Midtrans. Access appears after Midtrans notifies Fluentis. Returning to the site from the bank page does not unlock the course by itself.
 4. A course that is still unpaid stays closed.
 

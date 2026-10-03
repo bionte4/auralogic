@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CourseRow } from '@/components/landing/course-row';
 import { SiteNav } from '@/components/site-nav';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,14 +30,14 @@ export default function HomePage() {
           <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 py-20 text-center sm:px-6 sm:py-28">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Fluentis</p>
             <h1 className="mt-4 text-[clamp(2.25rem,6vw,4.25rem)] font-semibold leading-[1.05] tracking-tight">
-              Master professional English with enterprise-grade security
+              Learn English for your school phase
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Learn in sequence, then stream each lesson as encrypted video that stays tied to the signed-in student.
+              Choose a published course, read what you will be able to do, then pay. Lessons open one level at a time.
             </p>
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Button className="min-h-11 px-6" asChild>
-                <Link href="/learn">Explore courses</Link>
+                <Link href="#catalog">Explore courses</Link>
               </Button>
               <Button variant="outline" className="min-h-11 px-6" asChild>
                 <Link href="/student/login">Student login</Link>
@@ -44,6 +45,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <CourseRow />
 
         <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20 sm:px-6">
           <div className="grid gap-4 md:grid-cols-3">

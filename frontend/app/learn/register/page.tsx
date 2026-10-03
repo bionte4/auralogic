@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, type FormEvent } from 'react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
+import { courseReturnPath } from '@/lib/course-return';
 import { saveSession, type AuthUser } from '@/lib/session';
 
 interface RegisterResult {
@@ -15,7 +16,16 @@ interface RegisterResult {
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<p className="px-6 py-10 text-sm text-muted-foreground">Loading registration…</p>}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const nextPath = courseReturnPath(useSearchParams().get('next'));
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +42,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       });
       saveSession(result.user);
-      router.replace('/learn');
+      router.replace(nextPath ?? '/learn');
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not create the account.');
     } finally {

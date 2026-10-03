@@ -43,6 +43,13 @@ export interface CourseDetail extends CourseSummary {
   modules: ModuleSummary[];
 }
 
+export interface PublicCourseCard extends CourseSummary {
+  lessonCount: number;
+  durationMinutes: number;
+  updatedAt: string;
+  highlights: string[];
+}
+
 export interface CreatedModule {
   id: string;
   courseId: string;

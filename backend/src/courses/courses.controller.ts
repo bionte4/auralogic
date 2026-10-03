@@ -13,10 +13,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
-import type { CourseDetail, CourseRoster, CourseSummary, CreatedLesson, CreatedModule } from './course.types';
+import type { CourseDetail, CourseRoster, CourseSummary, CreatedLesson, CreatedModule, PublicCourseCard } from './course.types';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, ListCoursesQueryDto, UpdateCourseDto } from './dto/course.dto';
 import { CreateLessonDto } from './dto/lesson.dto';
@@ -47,6 +48,18 @@ export class CoursesController {
   @Roles(Role.STUDENT, Role.INSTRUCTOR, Role.SUPER_ADMIN)
   list(@CurrentUser() user: AuthenticatedUser, @Query() query: ListCoursesQueryDto): Promise<CourseSummary[]> {
     return this.coursesService.list(user, query);
+  }
+
+  @Public()
+  @Get('catalog')
+  listCatalog(): Promise<PublicCourseCard[]> {
+    return this.coursesService.listPublished();
+  }
+
+  @Public()
+  @Get('catalog/:courseId')
+  getCatalog(@Param('courseId', ParseUUIDPipe) courseId: string): Promise<CourseDetail> {
+    return this.coursesService.getPublished(courseId);
   }
 
   @Get(':courseId/roster')

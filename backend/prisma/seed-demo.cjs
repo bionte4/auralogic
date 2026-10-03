@@ -92,6 +92,7 @@ const courses = [
       {
         title: 'At the hotel',
         description: 'Check in and ask about breakfast.',
+        outcome: 'Ask for breakfast time and a quiet room.',
         lessons: [
           {
             type: 'READING',
@@ -117,6 +118,150 @@ const courses = [
       },
     ],
   },
+  {
+    slug: 'everyday-english',
+    title: 'Everyday English',
+    description: 'Greet people, name classroom objects, and ask simple questions.',
+    level: 'A1',
+    phase: 'A',
+    outcome: 'Students can greet someone and ask a simple classroom question.',
+    price: '120000.00',
+    status: 'PUBLISHED',
+    enrollment: 'NONE',
+    modules: [
+      {
+        title: 'Hello',
+        description: 'The first words of a school day.',
+        outcome: 'Greet a classmate and say your name.',
+        lessons: [
+          {
+            type: 'VIDEO',
+            title: 'Hello and goodbye',
+            description: 'Hello. My name is Sari. Goodbye. See you tomorrow.',
+            durationSeconds: 360,
+          },
+          {
+            type: 'QUIZ',
+            title: 'Greeting check',
+            description: 'Pass with 80.',
+            passingScore: 80,
+            questions: [
+              {
+                prompt: 'How do you say your name?',
+                choices: [
+                  { text: 'My name is Sari.', correct: true },
+                  { text: 'Name food.', correct: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'school-projects',
+    title: 'English for School Projects',
+    description: 'Describe a class project and ask a classmate for help.',
+    level: 'A2',
+    phase: 'C',
+    outcome: 'Students can explain a school project in a few clear sentences.',
+    price: '180000.00',
+    status: 'PUBLISHED',
+    enrollment: 'NONE',
+    modules: [
+      {
+        title: 'Describe the project',
+        description: 'Say what the project is and who it is for.',
+        outcome: 'Describe the goal of a class project.',
+        lessons: [
+          {
+            type: 'VIDEO',
+            title: 'Our class garden',
+            description: 'Our project is a class garden. We grow tomatoes for the canteen.',
+            durationSeconds: 480,
+          },
+          {
+            type: 'READING',
+            title: 'Asking for help',
+            description: 'Could you help me label the plants? I do not know this word yet.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'english-for-presentations',
+    title: 'English for Presentations',
+    description: 'Open a short talk, show one slide, and answer a question from the room.',
+    level: 'B2',
+    phase: 'E',
+    outcome: 'Students can open a presentation and answer one follow-up question.',
+    price: '420000.00',
+    status: 'PUBLISHED',
+    enrollment: 'NONE',
+    modules: [
+      {
+        title: 'Open the talk',
+        description: 'The first minute of a presentation.',
+        outcome: 'Open a talk and state the topic.',
+        lessons: [
+          {
+            type: 'VIDEO',
+            title: 'The first minute',
+            description: 'Good morning. Today I will explain how our team cut waiting time.',
+            durationSeconds: 600,
+          },
+          {
+            type: 'QUIZ',
+            title: 'Opening check',
+            description: 'Pass with 80.',
+            passingScore: 80,
+            questions: [
+              {
+                prompt: 'Which line opens a talk?',
+                choices: [
+                  { text: 'Today I will explain our result.', correct: true },
+                  { text: 'Whatever. Start.', correct: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'campus-english',
+    title: 'English for Campus Life',
+    description: 'Discuss a campus plan and write a short opinion for a seminar.',
+    level: 'C1',
+    phase: 'F',
+    outcome: 'Students can give a reasoned opinion about a campus decision.',
+    price: '520000.00',
+    status: 'PUBLISHED',
+    enrollment: 'NONE',
+    modules: [
+      {
+        title: 'A campus opinion',
+        description: 'State a view and one reason.',
+        outcome: 'State an opinion and support it with one reason.',
+        lessons: [
+          {
+            type: 'READING',
+            title: 'A short opinion',
+            description: 'I support the later library hours because students who work need a quiet place after class.',
+          },
+          {
+            type: 'VIDEO',
+            title: 'Seminar turn',
+            description: 'I would like to add one reason. The evidence from last semester supports this change.',
+            durationSeconds: 720,
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 async function main() {
@@ -129,10 +274,8 @@ async function main() {
   for (const course of courses) {
     const existing = await prisma.course.findUnique({ where: { slug: course.slug }, select: { id: true } });
     if (existing) {
-      await prisma.payment.deleteMany({ where: { enrollment: { courseId: existing.id } } });
-      await prisma.enrollment.deleteMany({ where: { courseId: existing.id } });
-      await prisma.certificate.deleteMany({ where: { courseId: existing.id } });
-      await prisma.course.delete({ where: { id: existing.id } });
+      console.log(`${course.slug} kept ${existing.id}`);
+      continue;
     }
 
     const created = await prisma.course.create({
@@ -143,12 +286,15 @@ async function main() {
         description: course.description,
         level: course.level,
         price: course.price,
+        phase: course.phase ?? null,
+        outcome: course.outcome ?? null,
         status: course.status,
         publishedAt: new Date(),
         modules: {
           create: course.modules.map((module, moduleIndex) => ({
             title: module.title,
             description: module.description,
+            outcome: module.outcome ?? null,
             orderIndex: moduleIndex + 1,
             lessons: {
               create: module.lessons.map((lesson, lessonIndex) => ({
@@ -192,6 +338,11 @@ async function main() {
         },
       },
     });
+
+    if (course.enrollment === 'NONE') {
+      console.log(`${course.slug} ${created.id}`);
+      continue;
+    }
 
     const paid = course.enrollment === 'PAID';
     const orderId = `seed-${course.slug}`;

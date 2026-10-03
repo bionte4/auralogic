@@ -2,12 +2,13 @@
 
 import { ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
+import { courseReturnPath } from '@/lib/course-return';
 import { clearSession, saveSession, type AuthUser } from '@/lib/session';
 
 interface LoginResult {
@@ -18,7 +19,16 @@ const fieldClassName =
   'h-11 border-zinc-800 bg-zinc-900/50 pl-10 text-zinc-100 placeholder:text-zinc-500 focus-visible:border-zinc-600 focus-visible:ring-white/20';
 
 export default function StudentLoginPage() {
+  return (
+    <Suspense fallback={<p className="px-6 py-10 text-sm text-zinc-400">Loading sign in…</p>}>
+      <StudentLoginForm />
+    </Suspense>
+  );
+}
+
+function StudentLoginForm() {
   const router = useRouter();
+  const nextPath = courseReturnPath(useSearchParams().get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +49,7 @@ export default function StudentLoginPage() {
         setError('This portal is for students.');
         return;
       }
-      router.replace('/learn');
+      router.replace(nextPath ?? '/learn');
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not sign in.');
     } finally {
