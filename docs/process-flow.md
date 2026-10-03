@@ -1,122 +1,135 @@
-# Process flows
+# Alur proses
 
-These are the paths Auralogic actually follows. The browser cannot grant course access or skip a level. Both decisions are made by the API.
+Ini jalur yang benar-benar diikuti Auralogic. Peramban tidak bisa memberi akses kursus atau melewati modul. Kedua keputusan itu dibuat API.
 
-## 1. Accounts
+Satu modul ditampilkan sebagai **Level** di studio dan pemutar. Jenjang kursus (Fondasi, Praktisi, Lanjut) dan jalur (Network, Cybersecurity, Data science, AI) hanya label katalog. Keduanya tidak membuka atau mengunci pelajaran. Aplikasi juga tidak memaksa urutan antar-kursus.
+
+Bahasa antarmuka (cookie `locale`, nilai akun `ID` atau `EN`) terpisah dari bahasa materi kursus. Mengganti bahasa tombol tidak menerjemahkan pelajaran. Edisi bahasa lain adalah kursus pasangan.
+
+## 1. Akun
 
 ```mermaid
 flowchart TD
-  visit[Open auralogic.web.id] --> register[Register]
-  register --> student[Role: Student]
-  student --> studentLogin["Sign in at /student/login"]
-  staffLogin["Sign in at /instructor/login"] --> staff{Role}
-  staff -->|Instructor| studio[Instructor studio]
+  visit[Buka auralogic.web.id] --> register[Daftar]
+  register --> student[Peran: Peserta]
+  student --> studentLogin["Masuk di /student/login"]
+  staffLogin["Masuk di /instructor/login"] --> staff{Peran}
+  staff -->|Instruktur| studio[Studio instruktur]
   staff -->|Admin| admin[Users, Finance, Settings]
-  staff -->|Student| rejected[Rejected]
-  admin --> promote[Change a student to Instructor or Admin]
+  staff -->|Peserta| rejected[Ditolak]
+  admin --> promote[Ubah peserta menjadi Instruktur atau Admin]
   promote --> staffLogin
 ```
 
-Public registration always creates a student. The first admin is created on the server, then that admin promotes other people. A student who opens the instructor page is turned away, and an instructor who opens the student page is turned away.
+Pendaftaran publik selalu membuat peserta. Admin pertama dibuat di server, lalu admin itu yang mengangkat orang lain. Peserta yang membuka halaman instruktur ditolak, dan instruktur yang membuka halaman peserta ditolak.
 
-Forgot-password always shows the same message, whether or not the email exists. The reset link lasts 15 minutes. The database stores only a hash of the token.
+Lupa kata sandi selalu menampilkan pesan yang sama, baik email itu ada maupun tidak. Tautan reset berlaku 15 menit. Basis data hanya menyimpan hash token.
 
-## 2. Build a course
+## 2. Susun kursus
 
 ```mermaid
 flowchart TD
-  create[Create course] --> profile[Cover, phase, learning outcome]
-  profile --> levels[Add levels and level outcomes]
-  levels --> lessons[Add video, reading, or quiz lessons]
-  lessons --> placement[Optional placement check]
-  placement --> files[Optional PPT, PDF, or DOCX]
-  files --> project[Optional phase project]
+  create[Buat kursus] --> profile[Sampul, jalur, jenjang, bahasa materi, hasil belajar]
+  profile --> levels[Tambah modul beserta hasil belajar modul]
+  levels --> lessons[Tambah pelajaran video, bacaan, atau kuis]
+  lessons --> placement[Pemeriksaan penempatan, opsional]
+  placement --> files[Berkas PPT, PDF, atau DOCX, opsional]
+  files --> project[Tugas akhir, opsional]
   project --> publish[Publish]
-  publish --> catalog[Visible to students]
+  publish --> catalog[Terlihat peserta]
 ```
 
-Level 1 has no prerequisite. Level 2 opens only after every lesson in level 1 is complete, unless a placement check starts the student on a later level. A quiz starts with a passing score of 80 unless the instructor changes it. The answer key is never sent to the student. The placement answer key stays on the server.
+Modul 1 tidak punya prasyarat. Modul 2 terbuka hanya setelah setiap pelajaran di modul 1 selesai, kecuali pemeriksaan penempatan memulai peserta di modul yang lebih belakang. Kuis mulai dengan nilai lulus 80 kecuali instruktur mengubahnya. Kunci jawaban tidak pernah dikirim ke peserta. Kunci penempatan tetap di server.
 
-## 3. Pay and unlock
+Kursus **DRAFT** tetap di studio dan tidak masuk katalog.
+
+## 3. Bayar dan buka
 
 ```mermaid
 flowchart TD
-  browse[Student opens the course page] --> preview[Free preview of the first lesson]
+  browse[Peserta membuka halaman kursus] --> preview[Pratinjau konten pelajaran pertama]
   preview --> checkout[Checkout]
-  checkout --> pending[Enrollment pending and unpaid]
-  pending --> gateway[Midtrans or Xendit]
-  gateway --> notify[Provider sends POST notification]
-  notify --> check{Signature and amount match?}
-  check -->|Yes| active[Enrollment active and paid]
-  check -->|No| stay[Enrollment stays locked]
-  gateway --> browser[Browser returns to the site]
+  checkout --> pending[Pendaftaran tertunda dan belum lunas]
+  pending --> gateway[Midtrans atau Xendit]
+  gateway --> notify[Penyedia mengirim notifikasi POST]
+  notify --> check{Tanda tangan dan jumlah cocok?}
+  check -->|Ya| active[Pendaftaran aktif dan lunas]
+  check -->|Tidak| stay[Pendaftaran tetap terkunci]
+  gateway --> browser[Peramban kembali ke situs]
   browser --> stay
-  active --> diagnose{Placement questions exist?}
-  diagnose -->|Yes| placed[Student answers the placement check]
-  placed --> learn[Course opens at the diagnosed level]
-  diagnose -->|No| learn
+  active --> diagnose{Ada pertanyaan penempatan?}
+  diagnose -->|Ya| placed[Peserta menjawab pemeriksaan penempatan]
+  placed --> learn[Kursus terbuka di modul hasil penempatan]
+  diagnose -->|Tidak| learn
 ```
 
-The notification URL is `https://api.auralogic.web.id/api/payments/midtrans/notification`. Opening it in a browser does not record a payment. A refund sets the enrollment to cancelled and the payment to refunded. A later failure notice does not remove access that was already paid.
+Pratinjau hanya untuk membaca atau memutar pelajaran 1 di modul 1 pada kursus yang sudah terbit. Menandai selesai, mengirim kuis, dan mengunduh lampiran tetap butuh pendaftaran aktif dan lunas.
 
-## 4. Learn in order
+URL notifikasi Midtrans adalah `https://api.auralogic.web.id/api/payments/midtrans/notification`. Membukanya di peramban tidak mencatat pembayaran. Pengembalian dana membuat pendaftaran dibatalkan dan pembayaran berstatus refund. Pemberitahuan gagal yang datang kemudian tidak mencabut akses yang sudah lunas.
+
+## 4. Belajar berurutan
 
 ```mermaid
 flowchart TD
-  open[Open a lesson] --> access{Active, paid, and inside the access dates?}
-  access -->|No| locked[403 Forbidden]
-  access -->|Yes| level{Every lesson in the previous level complete?}
-  level -->|No| locked
-  level -->|Yes| kind{Lesson type}
-  kind -->|Video or reading| mark[Mark as complete]
-  kind -->|Quiz| score[Server scores the attempt]
-  score --> pass{Score at least the passing score?}
-  pass -->|No| retry[Stay in progress]
-  pass -->|Yes| done[Lesson complete]
+  open[Buka pelajaran] --> access{Aktif, lunas, dan di dalam masa akses?}
+  access -->|Tidak| locked[403 Forbidden]
+  access -->|Ya| level{Setiap pelajaran di modul sebelumnya selesai?}
+  level -->|Tidak| locked
+  level -->|Ya| kind{Jenis pelajaran}
+  kind -->|Video atau bacaan| mark[Mark as complete]
+  kind -->|Kuis| score[Server menilai upaya]
+  score --> pass{Nilai mencapai batas lulus?}
+  pass -->|Tidak| retry[Tetap berjalan]
+  pass -->|Ya| done[Pelajaran selesai]
   mark --> done
-  done --> next{Level finished?}
-  next -->|Yes| unlock[Next level unlocks]
-  next -->|No| more[Continue this level]
+  done --> next{Modul selesai?}
+  next -->|Ya| unlock[Modul berikutnya terbuka]
+  next -->|Tidak| more[Lanjut di modul ini]
 ```
 
-A quiz that has questions ignores a score typed by the browser. The server shuffles questions and choices, then computes the score. A completed lesson cannot be reopened as incomplete.
+Kuis yang punya pertanyaan mengabaikan nilai yang diketik peramban. Server mengacak pertanyaan dan pilihan, lalu menghitung nilai. Pelajaran yang sudah selesai tidak bisa dikembalikan menjadi belum selesai.
 
-A placement check can open the course at a later level. Levels up to that start stay available for review. Every level after the start still waits until the previous level is complete. If the course has placement questions and the student has not answered them, every lesson returns 403.
+Pemeriksaan penempatan dapat membuka kursus di modul yang lebih belakang. Modul sampai modul awal itu tetap tersedia untuk ditinjau. Setiap modul setelahnya tetap menunggu modul sebelumnya selesai. Jika kursus punya pertanyaan penempatan dan peserta yang sudah lunas belum menjawab, setiap pelajaran mengembalikan 403.
 
-The phase project opens only after every lesson is complete. The teacher scores that submission. A named class groups enrolled students so the roster can be read one class at a time. Joining a class does not grant access.
+Tugas akhir terbuka hanya setelah setiap pelajaran selesai. Instruktur yang memberi nilai. Kelas bernama mengelompokkan peserta yang sudah terdaftar agar daftar bisa dibaca satu kelas. Masuk kelas tidak memberi akses.
 
-Rewards are granted once: 10 XP for a video or reading lesson, 25 XP for a quiz, and 50 XP when a whole level is complete. A quiz score of 90 or more can add a distinction badge. The streak uses the Asia/Jakarta day.
+Hadiah diberikan sekali: 10 XP untuk video atau bacaan, 25 XP untuk kuis yang lulus, dan 50 XP saat satu modul tuntas. Nilai kuis 90 atau lebih dapat menambah lencana distinction. Streak memakai hari kalender Asia/Jakarta.
 
-## 5. Certificate
+Instruktur pemilik kursus dan super admin dapat meninjau pelajaran tanpa membeli dan tanpa menyelesaikan modul sebelumnya.
+
+## 5. Sertifikat
 
 ```mermaid
 flowchart TD
-  all[Every lesson in the course is complete] --> issue[Certificate issued]
-  issue --> download[Student downloads the PDF]
-  issue --> qr[QR opens /verify/certificate-id]
-  qr --> public[Public page confirms the certificate]
-  public --> hidden[Student email is not shown]
+  all[Setiap pelajaran dalam kursus selesai] --> issue[Sertifikat terbit]
+  issue --> download[Peserta mengunduh PDF]
+  issue --> qr["QR membuka /verify/id-sertifikat"]
+  qr --> public[Halaman publik mengonfirmasi sertifikat]
+  public --> hidden[Email peserta tidak ditampilkan]
 ```
 
-## 6. Company seats
+Tugas akhir tidak menjadi syarat terbitnya sertifikat.
+
+## 6. Kursi perusahaan
 
 ```mermaid
 flowchart TD
-  admin[Admin opens Bulk enroll] --> list[Paste emails or upload a CSV]
-  list --> cap{At most 100 people}
-  cap --> create[Create a student when the email is new]
-  create --> grant[Grant the course with no payment row]
-  grant --> show[Show a temporary password once]
-  grant --> finance[Finance totals stay unchanged]
+  admin[Admin membuka Bulk enroll] --> list[Tempel email atau unggah CSV]
+  list --> cap{Paling banyak 100 orang}
+  cap --> create[Buat peserta jika email baru]
+  create --> grant[Beri kursus tanpa baris pembayaran]
+  grant --> show[Tampilkan kata sandi sementara sekali]
+  grant --> finance[Total keuangan tidak berubah]
 ```
 
-## 7. What each request checks
+## 7. Yang diperiksa tiap permintaan
 
-| Action | Required state |
+| Tindakan | Syarat |
 | --- | --- |
-| View the catalog | Published course |
-| Open lesson 1 | Student session, enrollment active and paid, current time inside the access window |
-| Open a later level | All of the above, plus every lesson in the previous level completed |
-| Download a lesson file | Same check as opening that lesson |
-| Play video | Same check, then a short-lived HLS playlist |
-| Record finance | A real payment row; company seats are excluded |
+| Lihat katalog | Kursus berstatus terbit |
+| Putar atau baca pelajaran 1 modul 1 | Sesi peserta dan kursus terbit. Pembayaran tidak wajib untuk konten ini |
+| Tandai selesai, kirim kuis, atau unduh berkas | Sesi peserta, pendaftaran aktif dan lunas, waktu sekarang di dalam masa akses, plus setiap pelajaran di modul sebelumnya selesai |
+| Buka modul berikutnya | Syarat yang sama dengan menulis progres |
+| Putar video | Syarat konten pelajaran itu, lalu daftar putar HLS yang berumur pendek |
+| Pratinjau staf | Super admin, atau instruktur yang memiliki kursus itu |
+| Catat keuangan | Baris pembayaran yang nyata. Kursi perusahaan tidak masuk |

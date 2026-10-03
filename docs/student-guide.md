@@ -1,59 +1,93 @@
-# Student guide
+# Panduan peserta
 
-Auralogic teaches one level at a time. A lesson opens after every lesson in the previous level is complete, and after the course has been paid.
+Auralogic adalah tempat belajar network, cybersecurity, data science, dan AI. Satu kursus terbuka satu modul demi satu modul. Pelajaran berikutnya baru bisa dibuka setelah modul sebelumnya selesai, dan setelah pembayaran terverifikasi.
 
-## Create an account
+Alamat situs: `https://auralogic.web.id`.
 
-1. Open `https://auralogic.web.id`.
-2. Choose **Register**. The form is at `/learn/register`.
-3. Use a real email address. The password needs at least 8 characters and must include a letter and a number.
-4. Sign in at `/student/login`.
+Tombol antarmuka mengikuti bahasa yang dipilih. Label di bawah memakai bahasa Indonesia. Jika bahasa diubah ke English, arti tombolnya sama.
 
-The session is stored in a secure cookie. Signing in as an instructor on the student page is rejected.
+## Bahasa
 
-## If you forget the password
+Ada dua bahasa yang terpisah.
 
-1. On the sign-in page, open **Forgot password?**
-2. Enter the same email. The screen always says a link is on the way, even when the email is unknown.
-3. Open the link within 15 minutes. It looks like `/reset-password?token=...`.
-4. Set a new password and sign in again.
+- **Bahasa antarmuka** dipilih dari sakelar bahasa di pojok atas. Pilihan ini mengubah menu dan tombol. Pilihan tersimpan di peramban, dan ikut akun setelah masuk.
+- **Bahasa materi** melekat pada kursus. Mengganti bahasa antarmuka tidak menerjemahkan isi pelajaran. Edisi bahasa lain, kalau ada, adalah kursus terpisah. Tautannya muncul di halaman kursus.
 
-While mail delivery is still in log mode, the school operator reads the link from the API log and sends it to you.
+## Buat akun
 
-## Buy a course
+1. Buka beranda, lalu pilih **Daftar**. Formulir ada di `/learn/register`.
+2. Isi nama, email yang bisa dibuka, dan kata sandi. Kata sandi minimal 8 karakter dan wajib memuat huruf serta angka.
+3. Pendaftaran publik selalu membuat akun peserta.
+4. Masuk di `/student/login`.
 
-1. The public homepage lists published courses before you sign in. Open a course to read the outcome and the level list. **Choose course** asks you to sign in, then sends you to payment. Access stays closed until the payment notification is verified.
-2. After you sign in, `/learn` still lists the catalog. The first lesson of a course you have not paid for can play as a free preview.
-3. Finish payment at Midtrans. Access appears after Midtrans notifies Auralogic. Returning to the site from the bank page does not unlock the course by itself.
-4. A course that is still unpaid stays closed.
+Sesi disimpan di cookie. Akun instruktur atau admin yang masuk lewat halaman peserta ditolak.
 
-Corporate seats can be granted by a super admin. Those seats do not create a personal payment.
+## Lupa kata sandi
 
-## Learn
+1. Di halaman masuk, buka **Forgot password?**
+2. Isi email yang sama. Layar selalu mengatakan tautan sedang dikirim, baik email itu terdaftar maupun tidak.
+3. Buka tautan dalam 15 menit. Bentuknya `/reset-password?token=...`.
+4. Buat kata sandi baru, lalu masuk lagi.
 
-The home of the student area is `/learn`.
+Selama pengiriman surat masih mode log, tautan hanya ada di log API. Minta tautan itu ke pengelola situs.
 
-- The welcome area shows your name, XP, streak, and progress.
-- **Continue learning** returns to the lesson you were on.
-- Each course card shows progress. A locked course cannot be opened.
+## Pilih dan bayar kursus
 
-If the course has a placement check, answer it before the lessons open. The result is the level you start on. You can still review earlier levels, and the server still refuses a level that comes after an unfinished one.
+Beranda menampilkan kursus yang sudah terbit, sebelum masuk. Saring lewat jalur (Network, Cybersecurity, Data science, AI), jenjang (Fondasi, Praktisi, Lanjut), bahasa materi, atau kotak **Cari kursus**.
 
-The catalog can be narrowed by phase, level, and price. After every lesson in a course is complete, the phase project opens. Submit the writing, or the transcript of what you said. The teacher scores it, and that score is the report evidence.
+1. Buka sebuah kartu kursus. Baca hasil belajar dan daftar modul.
+2. Pilih **Pilih kursus**. Jika belum masuk, situs meminta masuk dulu, lalu membuka halaman pembayaran.
+3. Selesaikan pembayaran di Midtrans atau Xendit.
+4. Akses terbuka setelah penyedia pembayaran memberi tahu Auralogic. Kembali dari halaman bank saja belum membuka kursus.
+5. Kursus yang pembayarannya belum terverifikasi tetap terkunci. Lencana statusnya bukan **Active**.
 
-Inside a course:
+Kursus perusahaan yang diberikan admin tidak punya tagihan pribadi. Kursus itu langsung aktif.
 
-- The curriculum lists levels and lessons. A lock means the previous level is unfinished. A check means the lesson is complete.
-- On a phone, the curriculum is a slide-over menu.
-- Video plays in the page. The player shows your email and ID as a moving watermark. Download shortcuts are disabled.
-- Reading lessons show the text supplied by the instructor.
-- **Lesson resources** lists PPT, PDF, and DOCX files. **Download** saves a copy after the server checks that you may open the lesson.
-- **Mark as complete** records a video or reading lesson and unlocks the next item when the level allows it.
-- A quiz is scored on the server. The usual passing score is 80. A failed attempt stays in progress so you can try again. A score of 90 or more can earn a distinction badge.
-- Completing every lesson in a level awards extra XP. The streak uses the Asia/Jakarta calendar day.
+## Pratinjau gratis
 
-You cannot mark a later level complete by editing the page address. The API answers `403` until the previous level is done.
+Setelah masuk, buka halaman kursus di area peserta (`/learn/courses/...`).
 
-## Certificate
+- Bagian **Free preview** menampilkan pelajaran pertama.
+- Jika pelajaran itu video dan kursus belum lunas, tombol **Play preview** memutarnya.
+- Kuis dan pelajaran setelahnya tetap terkunci sampai pembayaran terverifikasi.
+- Halaman publik sebelum masuk hanya untuk membaca dan membayar, bukan untuk memutar video.
 
-When every lesson in the course is complete, Auralogic issues a certificate. Download it from the student dashboard. Anyone who scans the QR code opens `/verify/<certificate-id>` and can confirm the certificate without seeing your email.
+## Belajar
+
+Beranda peserta ada di `/learn`. Header menampilkan **Kursus saya** dan **Keluar**.
+
+- Kartu sambutan menampilkan nama, XP, streak (hari kalender Asia/Jakarta), dan progres.
+- **Continue learning** lalu **Open lesson** kembali ke pelajaran yang sedang dikerjakan.
+- Kartu kursus aktif bisa dibuka. Kartu yang belum lunas tidak bisa dibuka.
+- **Certificates** muncul di bagian bawah setelah ada sertifikat.
+
+Jika kursus punya pemeriksaan penempatan, jawab dulu sebelum pelajaran terbuka. Hasilnya menentukan modul awal. Modul sebelum itu tetap bisa ditinjau. Modul setelah modul yang belum selesai tetap ditolak server.
+
+Di dalam kursus:
+
+- Kurikulum memakai label **Level** untuk tiap modul. Gembok berarti modul sebelumnya belum selesai. Centang berarti pelajaran selesai.
+- Di ponsel, kurikulum ada di menu geser.
+- Video diputar di halaman. Pemutar menampilkan email dan ID sebagai watermark yang bergerak. Pintasan unduh dimatikan.
+- Pelajaran bacaan menampilkan teks dari instruktur.
+- **Lesson resources** memuat berkas PPT, PDF, dan DOCX. **Download** baru berhasil setelah server mengizinkan pelajaran itu.
+- **Mark as complete** mencatat pelajaran video atau bacaan, lalu membuka butir berikutnya jika modul mengizinkan.
+- Kuis dinilai di server. Nilai lulus bawaan adalah 80. Gagal berarti pelajaran tetap berjalan dan boleh diulang. Nilai 90 atau lebih dapat lencana distinction.
+- Menyelesaikan setiap pelajaran dalam satu modul memberi XP tambahan.
+
+Mengubah alamat halaman tidak bisa menandai modul belakang sebagai selesai. API menjawab `403` sampai modul sebelumnya tuntas.
+
+XP diberikan sekali: 10 untuk video atau bacaan, 25 untuk kuis yang lulus, dan 50 saat satu modul tuntas.
+
+## Tugas akhir
+
+Jika instruktur memasang tugas akhir, formulirnya terbuka setelah setiap pelajaran selesai. Tulis jawaban, lalu kirim. Instruktur yang memberi nilai 0–100. Nilai itu bukti laporan, bukan syarat terbitnya sertifikat.
+
+## Sertifikat
+
+Sertifikat terbit saat setiap pelajaran dalam kursus selesai. Di `/learn`, bagian **Certificates** punya tiga tombol:
+
+- **View PDF** membuka berkas.
+- **Download PDF** menyimpan berkas. Nama berkas berbentuk `auralogic-<id>.pdf`.
+- **Verify** membuka halaman publik `/verify/<id-sertifikat>`.
+
+Siapa pun yang memindai kode QR di PDF membuka halaman yang sama. Halaman itu mengonfirmasi nama, kursus, dan tanggal terbit, tanpa menampilkan email.

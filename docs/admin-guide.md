@@ -1,56 +1,72 @@
-# Admin guide
+# Panduan admin
 
-A super admin signs in at `https://auralogic.web.id/instructor/login`. The same page is used by instructors. After sign-in, the header shows **Users**, **Finance**, and **Settings**. An instructor account does not see those links.
+Admin masuk di `https://auralogic.web.id/instructor/login`. Halaman yang sama dipakai instruktur. Setelah masuk, header admin menampilkan **Courses**, **Users**, **Finance**, **Settings**, dan **New course**. Akun instruktur tidak melihat **Users**, **Finance**, dan **Settings**.
 
-The first super admin is created on the server. See [Operations](operations.md). Public registration only creates students.
+Pendaftaran di situs hanya membuat peserta. Admin pertama dibuat di server. Langkahnya ada di [operasi](operations.md). Pertahankan sedikitnya satu admin yang aktif.
 
-## Users
+Admin juga boleh membuka studio instruktur. Cara menyusun kursus ada di [panduan instruktur](instructor-guide.md).
 
-Open **Users** or go to `/admin/users`.
+## Pengguna
 
-1. Search by name or email, optionally filter by role, then choose **Apply**.
-2. Change the role in the row. The labels are **Student**, **Instructor**, and **Admin**. Admin is the super admin role.
-3. Choose **Deactivate** to block sign-in. **Activate** restores the account. A deactivated person cannot sign in or reset a password.
-4. Use **Previous** and **Next** to move through pages of 20 accounts.
+Buka **Users** atau pergi ke `/admin/users`.
 
-The directory refuses to deactivate the last active admin, and it refuses to change that last admin into another role.
+1. Cari nama atau email, saring peran bila perlu, lalu pilih **Apply**.
+2. Ubah peran pada baris itu. Labelnya **Student**, **Instructor**, dan **Admin**. Admin adalah peran super admin.
+3. Pilih **Deactivate** untuk menutup masuk. **Activate** mengembalikan akun. Orang yang dinonaktifkan tidak bisa masuk dan tidak bisa mengatur ulang kata sandi.
+4. **Previous** dan **Next** membalik halaman berisi 20 akun.
 
-To give someone an instructor studio, they register as a student first. Then set their role to **Instructor**.
+Direktori menolak menonaktifkan admin aktif yang terakhir, dan menolak mengubah admin terakhir itu menjadi peran lain.
 
-## Bulk enroll
+Agar seseorang punya studio, minta mereka mendaftar sebagai peserta. Lalu ubah perannya menjadi **Instructor**.
 
-**Bulk enroll** grants a published course to many students without a payment. Those seats do not appear as revenue.
+## Daftar massal
 
-1. Choose **Bulk enroll**.
-2. Pick a published course. Unpublished courses are not listed.
-3. Paste addresses such as `alya@corp.test, budi@corp.test`, or upload a CSV with `email` and `name` columns.
-4. Choose **Enroll batch**. The batch stops at 100 people.
+**Bulk enroll** memberi kursus yang sudah terbit kepada banyak peserta tanpa pembayaran. Kursi ini tidak masuk pendapatan.
 
-A new address gets a student account. The temporary password is shown once on this screen. Copy it before you close the dialog. An address that already has an account is enrolled and keeps its current password.
+1. Pilih **Bulk enroll**.
+2. Pilih kursus yang sudah terbit. Kursus yang belum terbit tidak ada di daftar.
+3. Tempel alamat, misalnya `alya@corp.test, budi@corp.test`, atau unggah CSV dengan kolom `email` dan `name`.
+4. Pilih **Enroll batch**. Satu batch berhenti di 100 orang.
 
-## Finance
+Alamat baru mendapat akun peserta. Kata sandi sementara ditampilkan sekali di layar ini. Salin sebelum menutup dialog. Alamat yang sudah punya akun didaftarkan ke kursus dan tetap memakai kata sandi lama.
 
-Open **Finance** or go to `/admin/finance`.
+Baris yang dilewati muncul beserta alasannya. Periksa email yang tidak valid atau kursus yang tidak bisa diberi.
 
-- **Gross revenue** is the sum of paid and refunded charges.
-- **Net revenue** is the amount still held after refunds.
-- Dates use the Asia/Jakarta calendar.
-- Filter with a start date, end date, search text, and course level, then choose **Apply**.
-- The chart shows the monthly trend. The table lists transactions.
-- **Export CSV** downloads the rows that match the current filter.
+## Keuangan
 
-Company seats from bulk enroll have no payment row, so they stay out of these totals.
+Buka **Finance** atau pergi ke `/admin/finance`.
 
-## Settings
+- **Gross revenue** adalah jumlah tagihan yang lunas dan yang sudah dikembalikan.
+- **Net revenue** adalah jumlah yang masih tertahan setelah pengembalian dana.
+- Tanggal memakai kalender Asia/Jakarta.
+- Saring tanggal mulai, tanggal akhir, teks cari, dan jenjang, lalu pilih **Apply**.
+- Grafik menampilkan tren bulanan. Tabel menampilkan transaksi.
+- **Export CSV** mengunduh baris yang cocok dengan saringan yang sedang dipakai.
 
-Open **Settings** or go to `/admin/settings`. There are four tabs: **SMTP / Email**, **AI**, **Cloudflare Stream**, and **Payment & QRIS**.
+Kursi perusahaan dari daftar massal tidak punya baris pembayaran, jadi tidak masuk total ini.
 
-1. Fill the form. A secret field shows dots when a value is already stored. Leave that field blank to keep the saved secret.
-2. Choose **Test connection** to check SMTP, the AI provider, Cloudflare, or the payment key. The payment test does not create a charge.
-3. Choose **Save changes**. The toast confirms the result. The raw secret is not shown again.
+Pengembalian dana membatalkan pendaftaran dan menandai pembayaran sebagai refund. Pemberitahuan gagal yang datang kemudian tidak mencabut akses yang sudah lunas.
 
-Saved settings are an admin record. Live checkout, mail, and video still read the server environment file. Changing a key in this screen does not switch Midtrans, Resend, or Cloudflare until that environment file is updated and the API container is restarted.
+## Pengaturan
 
-## Certificates and courses
+Buka **Settings** atau pergi ke `/admin/settings`. Ada empat tab: **SMTP / Email**, **AI**, **Cloudflare Stream**, dan **Payment & QRIS**.
 
-Admins can also open **Courses** and use the instructor studio. Course access for a paying student still waits for a verified payment notification. The browser return from the bank does not unlock a course.
+1. Isi formulir. Kolom rahasia menampilkan titik-titik jika nilainya sudah tersimpan. Biarkan kolom itu kosong untuk mempertahankan rahasia yang ada.
+2. Pilih **Test connection** untuk memeriksa SMTP, penyedia AI, Cloudflare, atau kunci pembayaran. Uji pembayaran tidak membuat tagihan.
+3. Pilih **Save changes**. Toast mengonfirmasi hasilnya. Rahasia mentah tidak ditampilkan lagi.
+
+Nilai yang disimpan adalah catatan admin. Checkout, surat, dan video yang sedang berjalan tetap membaca berkas lingkungan di server. Mengganti kunci di layar ini tidak memindahkan Midtrans, Resend, atau Cloudflare sampai berkas lingkungan diperbarui dan kontainer API dijalankan ulang.
+
+URL notifikasi pembayaran production:
+
+- Midtrans: `https://api.auralogic.web.id/api/payments/midtrans/notification`
+- Xendit invoice: `https://api.auralogic.web.id/api/payments/xendit/invoices`
+- Xendit QRIS: `https://api.auralogic.web.id/api/payments/xendit/qris`
+
+Membuka URL itu di peramban tidak mencatat pembayaran. Yang membuka kursus adalah notifikasi POST yang tanda tangan dan jumlahnya cocok.
+
+## Kursus dan sertifikat
+
+Admin dapat membuka **Courses** dan memakai studio yang sama dengan instruktur, termasuk menerbitkan kursus dan menilai tugas akhir.
+
+Akses peserta yang membayar tetap menunggu notifikasi pembayaran yang terverifikasi. Kembali dari halaman bank tidak membuka kursus. Sertifikat terbit di akun peserta setelah setiap pelajaran kursus itu selesai. Halaman cek publik ada di `/verify/<id-sertifikat>` dan tidak menampilkan email peserta.

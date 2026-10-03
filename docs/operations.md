@@ -1,18 +1,20 @@
-# Operations guide
+# Panduan operasi
 
-This is the production layout for Auralogic on one Ubuntu VPS.
+Ini tata letak production Auralogic di satu VPS Ubuntu. Pekerjaan harian ada di [panduan peserta](student-guide.md), [panduan instruktur](instructor-guide.md), dan [panduan admin](admin-guide.md). Alur keputusannya ada di [alur proses](process-flow.md).
 
-| Public name | Points at | Process |
+| Nama publik | Menuju | Proses |
 | --- | --- | --- |
-| `auralogic.web.id` | `127.0.0.1:3000` through Nginx | Next.js |
-| `api.auralogic.web.id` | `127.0.0.1:3001` through Nginx | NestJS |
-| PostgreSQL and Redis | Docker network `fluentis` only | not reachable from the internet |
+| `auralogic.web.id` | `127.0.0.1:3000` lewat Nginx | Next.js |
+| `api.auralogic.web.id` | `127.0.0.1:3001` lewat Nginx | NestJS |
+| PostgreSQL dan Redis | Jaringan Docker `fluentis` saja | tidak dapat dijangkau dari internet |
 
-The API container applies `schema.prisma` with `prisma db push` every time it starts. Keep a database backup before a schema change.
+Kontainer API menerapkan `schema.prisma` dengan `prisma db push` setiap kali mulai. Buat cadangan basis data sebelum mengubah skema. Kontainer tidak mengisi kursus demo.
+
+Basis data baru tidak membutuhkan `backend/prisma/domain-migration.sql`. Berkas itu hanya untuk basis data lama yang masih menyimpan jenjang CEFR.
 
 ## 1. Server
 
-Use Ubuntu with at least 2 GB of RAM. The API image installs Chromium so it can render certificate PDFs.
+Pakai Ubuntu dengan RAM minimal 2 GB. Image API memasang Chromium agar dapat merender PDF sertifikat.
 
 ```bash
 curl -fsSL https://get.docker.com | sudo sh
@@ -24,26 +26,26 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-If `docker-compose-plugin` conflicts with Ubuntu's `docker-compose-v2`, keep the Ubuntu package. `docker compose version` is enough.
+Jika `docker-compose-plugin` bentrok dengan `docker-compose-v2` Ubuntu, pertahankan paket Ubuntu. `docker compose version` sudah cukup.
 
-Leave ports 3000, 3001, 5432, and 6379 closed. Compose already binds the web and API to `127.0.0.1`.
+Biarkan port 3000, 3001, 5432, dan 6379 tertutup. Compose sudah mengikat web dan API ke `127.0.0.1`.
 
 ## 2. DNS
 
-Both names must be A records to the same VPS address.
+Kedua nama harus berupa record A ke alamat VPS yang sama.
 
-| Name | Type | Value |
+| Nama | Tipe | Nilai |
 | --- | --- | --- |
-| `auralogic.web.id` | A | public IP of this VPS |
-| `api.auralogic.web.id` | A | the same IP |
+| `auralogic.web.id` | A | IP publik VPS ini |
+| `api.auralogic.web.id` | A | IP yang sama |
 
-Confirm from outside the VPS, because the VPS resolver can keep an old address:
+Periksa dari luar VPS, karena resolver VPS dapat menyimpan alamat lama:
 
 ```bash
 dig +short api.auralogic.web.id @8.8.8.8
 ```
 
-## 3. Environment
+## 3. Lingkungan
 
 ```bash
 sudo mkdir -p /opt/auralogic
@@ -53,7 +55,7 @@ cd /opt/auralogic
 cp deploy/env.example .env
 ```
 
-Set these before the first build:
+Isi nilai ini sebelum build pertama:
 
 ```bash
 FRONTEND_ORIGIN=https://auralogic.web.id
@@ -65,15 +67,19 @@ POSTGRES_PASSWORD=<openssl rand -hex 24>
 JWT_SECRET=<openssl rand -hex 32>
 ```
 
-`POSTGRES_PASSWORD` and `JWT_SECRET` must be letters and numbers. Replacing `JWT_SECRET` signs every current session out.
+`POSTGRES_PASSWORD` dan `JWT_SECRET` harus huruf dan angka. Mengganti `JWT_SECRET` mengeluarkan semua sesi yang sedang berjalan.
 
-`MIDTRANS_SERVER_KEY` comes from the Midtrans dashboard. Use the sandbox key while testing, and set `MIDTRANS_IS_PRODUCTION=true` only for the live key.
+`POSTGRES_USER` dan `POSTGRES_DB` boleh tetap `fluentis`, atau keduanya diganti `auralogic` sebelum `docker compose up` yang pertama. Kolom kata sandi yang kosong tidak aman: Compose mengisinya dengan `fluentis` lewat `${POSTGRES_PASSWORD:-fluentis}`. Setelah volume Postgres ada, mengubah `.env` tidak mengganti nama basis data dan tidak mengganti kata sandi yang sudah tersimpan. Menggantinya berarti menghapus volume, dan data di dalamnya hilang.
 
-Leave `VIDEO_MODE=mock` until Cloudflare Stream credentials are ready. Leave `MAIL_PROVIDER=log` until Resend is configured. Password-reset messages then appear in `sudo docker compose logs backend`. Lesson files stay on the `attachment_data` volume while `ATTACHMENT_STORAGE=local`.
+`MIDTRANS_SERVER_KEY` berasal dari dasbor Midtrans. Pakai kunci sandbox saat uji, dan set `MIDTRANS_IS_PRODUCTION=true` hanya untuk kunci hidup.
 
-The Settings screen in the admin UI stores SMTP, AI, Cloudflare, and payment values. Checkout, mail, and video playback still read this `.env` file. Saving the screen does not switch the live gateway.
+Biarkan `VIDEO_MODE=mock` sampai kredensial Cloudflare Stream siap. Dalam mode itu, pelajaran yang boleh diputar memakai aliran uji, bukan berkas `.mp4` di dalam kursus. Biarkan `MAIL_PROVIDER=log` sampai Resend dikonfigurasi. Pesan atur ulang kata sandi lalu muncul di `sudo docker compose logs backend`. Berkas pelajaran tinggal di volume `attachment_data` selama `ATTACHMENT_STORAGE=local`. Nama volume di host mengikuti nama proyek Compose, yaitu `auralogic_attachment_data` jika direktori instalasinya `/opt/auralogic`.
 
-## 4. Start
+Layar Settings di admin menyimpan nilai SMTP, AI, Cloudflare, dan pembayaran. Checkout, surat, dan pemutaran video tetap membaca berkas `.env` ini. Menyimpan layar itu tidak memindahkan gerbang yang sedang hidup.
+
+Cookie sesi tetap bernama `fluentis_access` dan `fluentis_csrf`.
+
+## 4. Mulai
 
 ```bash
 cd /opt/auralogic
@@ -82,13 +88,13 @@ sudo docker compose ps
 curl -fsS http://127.0.0.1:3001/api/health
 ```
 
-The health body is `{"status":"ok"}`. The first API build is slow because it downloads Chromium.
+Isi health adalah `{"status":"ok"}`. Build API pertama lambat karena mengunduh Chromium.
 
-If the API exits with `Prisma Client could not locate the Query Engine`, pull the latest `main` and build again. The image must generate the client for `debian-openssl-3.0.x`.
+Jika API berhenti dengan `Prisma Client could not locate the Query Engine`, tarik `main` terbaru lalu build lagi. Image harus menghasilkan klien untuk `debian-openssl-3.0.x`.
 
 ## 5. HTTPS
 
-Install Nginx, then serve both names on port 80. The site file proxies the web app and the API and also exposes `/.well-known/acme-challenge/`.
+Pasang Nginx, lalu layani kedua nama di port 80. Berkas situs meneruskan web dan API, dan juga membuka `/.well-known/acme-challenge/`.
 
 ```bash
 sudo apt install -y nginx certbot python3-certbot-nginx
@@ -101,26 +107,28 @@ sudo systemctl enable --now certbot.timer
 curl -fsS https://api.auralogic.web.id/api/health
 ```
 
-A local `curl` that reports a certificate name mismatch is usually the VPS DNS cache. Check `@8.8.8.8`, or call curl with `--resolve api.auralogic.web.id:443:<vps-ip>`.
+Certbot menyunting berkas Nginx yang hidup dan menambahkan HTTPS. Jangan menimpa `/etc/nginx/sites-available/auralogic.conf` dengan salinan HTTP dari repositori setelah sertifikat ada. `git pull` tidak mengubah `/etc/nginx`.
 
-## 6. Payments
+`curl` lokal yang melaporkan nama sertifikat tidak cocok biasanya cache DNS VPS. Periksa `@8.8.8.8`, atau panggil curl dengan `--resolve api.auralogic.web.id:443:<ip-vps>`.
 
-In the Midtrans dashboard set the notification URL to:
+## 6. Pembayaran
+
+Di dasbor Midtrans, set URL notifikasi ke:
 
 `https://api.auralogic.web.id/api/payments/midtrans/notification`
 
-Opening that address in a browser sends GET and shows `{"status":"ok","accept":"POST"}`. Midtrans sends POST. An empty POST returns `400 Invalid notification body`. A signed notification is what marks an enrollment paid.
+Membuka alamat itu di peramban mengirim GET dan menampilkan `{"status":"ok","accept":"POST"}`. Midtrans mengirim POST. POST kosong mengembalikan `400 Invalid notification body`. Notifikasi yang tanda tangannya sah menandai pendaftaran sebagai lunas.
 
-Xendit callbacks, when that provider is selected:
+Callback Xendit, jika penyedia itu yang dipilih:
 
 - `https://api.auralogic.web.id/api/payments/xendit/invoices`
 - `https://api.auralogic.web.id/api/payments/xendit/qris`
 
-Access opens only after the verified notification matches the stored amount. The browser return URL does not enroll the student.
+Akses terbuka hanya setelah notifikasi yang terverifikasi cocok dengan jumlah yang tersimpan. URL kembali peramban tidak mendaftarkan peserta.
 
-## 7. First super admin
+## 7. Admin pertama
 
-Registration on the website creates students only. Create the first super admin once, inside the API container:
+Pendaftaran di situs hanya membuat peserta. Buat admin pertama sekali, di dalam kontainer API. Ganti `ADMIN_PASSWORD` sebelum menjalankan perintah. Kata sandi tidak disimpan di repositori.
 
 ```bash
 cd /opt/auralogic
@@ -143,9 +151,46 @@ bcrypt.hash(process.env.ADMIN_PASSWORD, 12).then((passwordHash) =>
 '
 ```
 
-Sign in at `https://auralogic.web.id/instructor/login`. Day-to-day admin work is described in the [admin guide](admin-guide.md). Keep at least one active super admin.
+Masuk di `https://auralogic.web.id/instructor/login`. Pekerjaan admin sehari-hari ada di [panduan admin](admin-guide.md). Pertahankan sedikitnya satu super admin yang aktif. Menjalankan ulang perintah dengan `ADMIN_PASSWORD` baru mengganti kata sandi akun itu.
 
-## 8. Updates
+## 8. Kursus demo
+
+Langkah ini opsional. Skrip `backend/prisma/seed-demo.cjs` membuat 12 kursus, tiga tiap jalur: dua terbit dan satu draf. Tiap kursus punya satu pelajaran video dan satu kuis defensif. Hanya `network-foundation` yang sudah lunas untuk `student@fluentis.test`. Beranda menampilkan delapan kursus terbit.
+
+Skrip berhenti jika dua akun ini belum ada: `instructor@fluentis.test` dan `student@fluentis.test`. Di dalam kontainer, skrip juga menulis sampul ke `/frontend/public/covers`. Buat direktori itu sebagai root sebelum menjalankan skrip. Sampul yang dilihat pengunjung sudah ada di image frontend. Tulisan di kontainer API hanya agar skrip tidak gagal.
+
+Ganti `DEMO_PASSWORD` sebelum menjalankan perintah.
+
+```bash
+cd /opt/auralogic
+sudo docker compose exec -u root backend mkdir -p /frontend/public/covers
+sudo docker compose exec -u root backend chown -R node:node /frontend
+sudo docker compose exec \
+  -e DEMO_PASSWORD='' \
+  backend node -e '
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
+const prisma = new PrismaClient();
+bcrypt.hash(process.env.DEMO_PASSWORD, 12).then(async (passwordHash) => {
+  await prisma.user.upsert({
+    where: { email: "instructor@fluentis.test" },
+    update: { passwordHash, role: "INSTRUCTOR", active: true, name: "Auralogic Studio" },
+    create: { email: "instructor@fluentis.test", passwordHash, role: "INSTRUCTOR", name: "Auralogic Studio" },
+  });
+  await prisma.user.upsert({
+    where: { email: "student@fluentis.test" },
+    update: { passwordHash, role: "STUDENT", active: true, name: "Peserta Demo" },
+    create: { email: "student@fluentis.test", passwordHash, role: "STUDENT", name: "Peserta Demo" },
+  });
+  await prisma.$disconnect();
+});
+'
+sudo docker compose exec backend node prisma/seed-demo.cjs
+```
+
+Peserta demo masuk di `/student/login`. Instruktur demo masuk di `/instructor/login`. Akun admin production tetap akun dari bagian 7.
+
+## 9. Pembaruan
 
 ```bash
 cd /opt/auralogic
@@ -153,16 +198,18 @@ git pull
 sudo docker compose up -d --build
 ```
 
-Build the frontend again whenever `NEXT_PUBLIC_API_URL` changes. Read the API log with `sudo docker compose logs -f backend`.
+Build frontend lagi setiap kali `NEXT_PUBLIC_API_URL` berubah. Baca log API dengan `sudo docker compose logs -f backend`.
 
-## 9. Backup
+## 10. Cadangan
 
-Dump the database from the Compose network:
+Buang basis data dari jaringan Compose. Nama pengguna dan nama basis data mengikuti `.env`.
 
 ```bash
 cd /opt/auralogic
 sudo docker compose exec -T postgres \
-  pg_dump -U fluentis fluentis > "fluentis-$(date +%F).sql"
+  pg_dump -U fluentis fluentis > "auralogic-$(date +%F).sql"
 ```
 
-Lesson uploads live in the Docker volume `fluentis_attachment_data`. Copy that volume as well when attachments must be kept. Redis can be rebuilt from PostgreSQL if it is lost. The app continues without Redis and then uses the database for every read.
+Jika `POSTGRES_USER` atau `POSTGRES_DB` diubah sebelum boot pertama, pakai kedua nama itu di `pg_dump`, bukan `fluentis`.
+
+Unggahan pelajaran ada di volume Docker `auralogic_attachment_data`. Salin volume itu juga jika lampiran harus disimpan. Redis dapat dibangun ulang dari PostgreSQL jika hilang. Aplikasi tetap jalan tanpa Redis, lalu memakai basis data untuk setiap pembacaan.
