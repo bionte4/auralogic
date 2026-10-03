@@ -6,8 +6,8 @@ The web app and the API are separate services.
 
 | Service | Local | Production |
 | --- | --- | --- |
-| Web (Next.js) | http://localhost:3000 | https://fluentis.web.id |
-| API (NestJS) | http://localhost:3001/api | https://api.fluentis.web.id/api |
+| Web (Next.js) | http://localhost:3000 | https://auralogic.web.id |
+| API (NestJS) | http://localhost:3001/api | https://api.auralogic.web.id/api |
 | PostgreSQL | inside Compose, not published | inside Compose, not published |
 | Redis | inside Compose, not published | inside Compose, not published |
 

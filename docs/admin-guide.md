@@ -1,6 +1,6 @@
 # Admin guide
 
-A super admin signs in at `https://fluentis.web.id/instructor/login`. The same page is used by instructors. After sign-in, the header shows **Users**, **Finance**, and **Settings**. An instructor account does not see those links.
+A super admin signs in at `https://auralogic.web.id/instructor/login`. The same page is used by instructors. After sign-in, the header shows **Users**, **Finance**, and **Settings**. An instructor account does not see those links.
 
 The first super admin is created on the server. See [Operations](operations.md). Public registration only creates students.
 

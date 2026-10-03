@@ -138,7 +138,7 @@ function readCookieDomain(value: string | undefined, frontendHost: string): stri
   }
   const domain = (raw.startsWith('.') ? raw.slice(1) : raw).toLowerCase();
   if (!/^[a-z0-9.-]+$/.test(domain) || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) {
-    throw new Error('COOKIE_DOMAIN must be a hostname such as .fluentis.web.id.');
+    throw new Error('COOKIE_DOMAIN must be a hostname such as .auralogic.web.id.');
   }
   const host = frontendHost.toLowerCase();
   if (host !== domain && !host.endsWith(`.${domain}`)) {

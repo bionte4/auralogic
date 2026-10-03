@@ -1,6 +1,6 @@
 # Instructor guide
 
-Instructors build the course that students must follow in order. Sign in at `https://fluentis.web.id/instructor/login`. A student account is turned away from this page.
+Instructors build the course that students must follow in order. Sign in at `https://auralogic.web.id/instructor/login`. A student account is turned away from this page.
 
 A super admin uses the same sign-in page and also sees **Users**, **Finance**, and **Settings**.
 

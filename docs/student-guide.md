@@ -4,7 +4,7 @@ Auralogic teaches one level at a time. A lesson opens after every lesson in the 
 
 ## Create an account
 
-1. Open `https://fluentis.web.id`.
+1. Open `https://auralogic.web.id`.
 2. Choose **Register**. The form is at `/learn/register`.
 3. Use a real email address. The password needs at least 8 characters and must include a letter and a number.
 4. Sign in at `/student/login`.

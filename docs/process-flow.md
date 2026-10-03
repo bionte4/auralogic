@@ -6,7 +6,7 @@ These are the paths Auralogic actually follows. The browser cannot grant course 
 
 ```mermaid
 flowchart TD
-  visit[Open fluentis.web.id] --> register[Register]
+  visit[Open auralogic.web.id] --> register[Register]
   register --> student[Role: Student]
   student --> studentLogin["Sign in at /student/login"]
   staffLogin["Sign in at /instructor/login"] --> staff{Role}
@@ -57,7 +57,7 @@ flowchart TD
   diagnose -->|No| learn
 ```
 
-The notification URL is `https://api.fluentis.web.id/api/payments/midtrans/notification`. Opening it in a browser does not record a payment. A refund sets the enrollment to cancelled and the payment to refunded. A later failure notice does not remove access that was already paid.
+The notification URL is `https://api.auralogic.web.id/api/payments/midtrans/notification`. Opening it in a browser does not record a payment. A refund sets the enrollment to cancelled and the payment to refunded. A later failure notice does not remove access that was already paid.
 
 ## 4. Learn in order
 

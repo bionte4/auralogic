@@ -4,8 +4,8 @@ This is the production layout for Auralogic on one Ubuntu VPS.
 
 | Public name | Points at | Process |
 | --- | --- | --- |
-| `fluentis.web.id` | `127.0.0.1:3000` through Nginx | Next.js |
-| `api.fluentis.web.id` | `127.0.0.1:3001` through Nginx | NestJS |
+| `auralogic.web.id` | `127.0.0.1:3000` through Nginx | Next.js |
+| `api.auralogic.web.id` | `127.0.0.1:3001` through Nginx | NestJS |
 | PostgreSQL and Redis | Docker network `fluentis` only | not reachable from the internet |
 
 The API container applies `schema.prisma` with `prisma db push` every time it starts. Keep a database backup before a schema change.
@@ -34,13 +34,13 @@ Both names must be A records to the same VPS address.
 
 | Name | Type | Value |
 | --- | --- | --- |
-| `fluentis.web.id` | A | public IP of this VPS |
-| `api.fluentis.web.id` | A | the same IP |
+| `auralogic.web.id` | A | public IP of this VPS |
+| `api.auralogic.web.id` | A | the same IP |
 
 Confirm from outside the VPS, because the VPS resolver can keep an old address:
 
 ```bash
-dig +short api.fluentis.web.id @8.8.8.8
+dig +short api.auralogic.web.id @8.8.8.8
 ```
 
 ## 3. Environment
@@ -48,7 +48,7 @@ dig +short api.fluentis.web.id @8.8.8.8
 ```bash
 sudo mkdir -p /opt/fluentis
 sudo chown "$USER":"$USER" /opt/fluentis
-git clone https://github.com/bionte4/fluentis.git /opt/fluentis
+git clone https://github.com/bionte4/auralogic.git /opt/fluentis
 cd /opt/fluentis
 cp deploy/env.example .env
 ```
@@ -56,11 +56,11 @@ cp deploy/env.example .env
 Set these before the first build:
 
 ```bash
-FRONTEND_ORIGIN=https://fluentis.web.id
-NEXT_PUBLIC_API_URL=https://api.fluentis.web.id/api
+FRONTEND_ORIGIN=https://auralogic.web.id
+NEXT_PUBLIC_API_URL=https://api.auralogic.web.id/api
 COOKIE_SAMESITE=lax
 COOKIE_SECURE=true
-COOKIE_DOMAIN=.fluentis.web.id
+COOKIE_DOMAIN=.auralogic.web.id
 POSTGRES_PASSWORD=<openssl rand -hex 24>
 JWT_SECRET=<openssl rand -hex 32>
 ```
@@ -93,31 +93,31 @@ Nginx on port 80 must serve `/.well-known/acme-challenge/` from `/var/www/certbo
 ```bash
 sudo mkdir -p /var/www/certbot
 sudo certbot certonly --webroot -w /var/www/certbot \
-  -d fluentis.web.id -d api.fluentis.web.id
+  -d auralogic.web.id -d api.auralogic.web.id
 ```
 
-The certificate files are `/etc/letsencrypt/live/fluentis.web.id/fullchain.pem` and `privkey.pem`. Use those paths for both Nginx server blocks. Allow only TLS 1.2 and TLS 1.3.
+The certificate files are `/etc/letsencrypt/live/auralogic.web.id/fullchain.pem` and `privkey.pem`. Use those paths for both Nginx server blocks. Allow only TLS 1.2 and TLS 1.3.
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
 sudo systemctl enable --now certbot.timer
-curl -fsS https://api.fluentis.web.id/api/health
+curl -fsS https://api.auralogic.web.id/api/health
 ```
 
-A local `curl` that reports a certificate name mismatch is usually the VPS DNS cache. Check `@8.8.8.8`, or call curl with `--resolve api.fluentis.web.id:443:<vps-ip>`.
+A local `curl` that reports a certificate name mismatch is usually the VPS DNS cache. Check `@8.8.8.8`, or call curl with `--resolve api.auralogic.web.id:443:<vps-ip>`.
 
 ## 6. Payments
 
 In the Midtrans dashboard set the notification URL to:
 
-`https://api.fluentis.web.id/api/payments/midtrans/notification`
+`https://api.auralogic.web.id/api/payments/midtrans/notification`
 
 Opening that address in a browser sends GET and shows `{"status":"ok","accept":"POST"}`. Midtrans sends POST. An empty POST returns `400 Invalid notification body`. A signed notification is what marks an enrollment paid.
 
 Xendit callbacks, when that provider is selected:
 
-- `https://api.fluentis.web.id/api/payments/xendit/invoices`
-- `https://api.fluentis.web.id/api/payments/xendit/qris`
+- `https://api.auralogic.web.id/api/payments/xendit/invoices`
+- `https://api.auralogic.web.id/api/payments/xendit/qris`
 
 Access opens only after the verified notification matches the stored amount. The browser return URL does not enroll the student.
 
@@ -128,7 +128,7 @@ Registration on the website creates students only. Create the first super admin 
 ```bash
 cd /opt/fluentis
 sudo docker compose exec \
-  -e ADMIN_EMAIL='admin@fluentis.web.id' \
+  -e ADMIN_EMAIL='admin@auralogic.web.id' \
   -e ADMIN_NAME='Auralogic Admin' \
   -e ADMIN_PASSWORD='' \
   backend node -e '
@@ -146,7 +146,7 @@ bcrypt.hash(process.env.ADMIN_PASSWORD, 12).then((passwordHash) =>
 '
 ```
 
-Sign in at `https://fluentis.web.id/instructor/login`. Day-to-day admin work is described in the [admin guide](admin-guide.md). Keep at least one active super admin.
+Sign in at `https://auralogic.web.id/instructor/login`. Day-to-day admin work is described in the [admin guide](admin-guide.md). Keep at least one active super admin.
 
 ## 8. Updates
 
