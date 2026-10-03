@@ -46,10 +46,10 @@ dig +short api.auralogic.web.id @8.8.8.8
 ## 3. Environment
 
 ```bash
-sudo mkdir -p /opt/fluentis
-sudo chown "$USER":"$USER" /opt/fluentis
-git clone https://github.com/bionte4/auralogic.git /opt/fluentis
-cd /opt/fluentis
+sudo mkdir -p /opt/auralogic
+sudo chown "$USER":"$USER" /opt/auralogic
+git clone https://github.com/bionte4/auralogic.git /opt/auralogic
+cd /opt/auralogic
 cp deploy/env.example .env
 ```
 
@@ -76,7 +76,7 @@ The Settings screen in the admin UI stores SMTP, AI, Cloudflare, and payment val
 ## 4. Start
 
 ```bash
-cd /opt/fluentis
+cd /opt/auralogic
 sudo docker compose up -d --build
 sudo docker compose ps
 curl -fsS http://127.0.0.1:3001/api/health
@@ -88,18 +88,15 @@ If the API exits with `Prisma Client could not locate the Query Engine`, pull th
 
 ## 5. HTTPS
 
-Nginx on port 80 must serve `/.well-known/acme-challenge/` from `/var/www/certbot` for both hostnames. Issue one certificate that lists both names:
+Install Nginx, then serve both names on port 80. The site file proxies the web app and the API and also exposes `/.well-known/acme-challenge/`.
 
 ```bash
-sudo mkdir -p /var/www/certbot
-sudo certbot certonly --webroot -w /var/www/certbot \
-  -d auralogic.web.id -d api.auralogic.web.id
-```
-
-The certificate files are `/etc/letsencrypt/live/auralogic.web.id/fullchain.pem` and `privkey.pem`. Use those paths for both Nginx server blocks. Allow only TLS 1.2 and TLS 1.3.
-
-```bash
+sudo apt install -y nginx certbot python3-certbot-nginx
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo cp deploy/nginx/auralogic.conf /etc/nginx/sites-available/auralogic.conf
+sudo ln -sf /etc/nginx/sites-available/auralogic.conf /etc/nginx/sites-enabled/auralogic.conf
 sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d auralogic.web.id -d api.auralogic.web.id
 sudo systemctl enable --now certbot.timer
 curl -fsS https://api.auralogic.web.id/api/health
 ```
@@ -126,7 +123,7 @@ Access opens only after the verified notification matches the stored amount. The
 Registration on the website creates students only. Create the first super admin once, inside the API container:
 
 ```bash
-cd /opt/fluentis
+cd /opt/auralogic
 sudo docker compose exec \
   -e ADMIN_EMAIL='admin@auralogic.web.id' \
   -e ADMIN_NAME='Auralogic Admin' \
@@ -151,7 +148,7 @@ Sign in at `https://auralogic.web.id/instructor/login`. Day-to-day admin work is
 ## 8. Updates
 
 ```bash
-cd /opt/fluentis
+cd /opt/auralogic
 git pull
 sudo docker compose up -d --build
 ```
@@ -163,7 +160,7 @@ Build the frontend again whenever `NEXT_PUBLIC_API_URL` changes. Read the API lo
 Dump the database from the Compose network:
 
 ```bash
-cd /opt/fluentis
+cd /opt/auralogic
 sudo docker compose exec -T postgres \
   pg_dump -U fluentis fluentis > "fluentis-$(date +%F).sql"
 ```
