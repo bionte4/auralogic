@@ -10,6 +10,7 @@ const admin: AuthenticatedUser = {
   email: 'admin@fluentis.test',
   name: 'Admin',
   role: Role.SUPER_ADMIN,
+  locale: 'ID',
 };
 
 describe('AdminUsersService', () => {

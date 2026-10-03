@@ -14,7 +14,7 @@ const paid = {
   createdAt: new Date('2026-10-02T02:00:00.000Z'),
   enrollment: {
     user: { name: 'Alya', email: 'alya@fluentis.test' },
-    course: { id: 'course-1', title: 'Business English', level: 'B1' },
+    course: { id: 'course-1', title: 'Network Foundations', level: 'FOUNDATION' },
   },
 };
 
@@ -33,7 +33,7 @@ describe('FinanceService', () => {
 
     expect(summary.grossRevenue).toBe('250000');
     expect(summary.netRevenue).toBe('250000');
-    expect(summary.byCourse[0]).toMatchObject({ title: 'Business English', level: 'B1' });
+    expect(summary.byCourse[0]).toMatchObject({ title: 'Network Foundations', level: 'FOUNDATION' });
     expect(JSON.stringify(summary)).not.toContain('qr');
   });
 

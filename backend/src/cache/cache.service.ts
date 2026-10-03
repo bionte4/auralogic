@@ -64,7 +64,7 @@ export class CacheService implements OnModuleDestroy {
 }
 
 export function courseStructureKey(courseId: string): string {
-  return `course:structure:${courseId}`;
+  return `course:structure:v2:${courseId}`;
 }
 
 export function progressKey(userId: string, courseId: string): string {

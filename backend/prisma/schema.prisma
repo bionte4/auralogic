@@ -1,4 +1,4 @@
-// Fluentis — Enterprise English LMS (NestJS + PostgreSQL)
+// Fluentis — technical learning platform (NestJS + PostgreSQL)
 // Frontend Next.js lives in a separate service and never talks to this database.
 //
 // Sequential learning (API must return 403 when this fails):
@@ -45,29 +45,38 @@ enum CourseStatus {
   ARCHIVED
 }
 
-enum CefrLevel {
-  A1
-  A2
-  B1
-  B2
-  C1
-  C2
+/// Skill band of one course. Modules inside the course stay ordered by orderIndex.
+enum SkillBand {
+  FOUNDATION
+  PRACTITIONER
+  ADVANCED
 }
 
-/// Kurikulum Merdeka phase. A is grades 1–2 through F for grades 11–12.
-enum LearningPhase {
-  A
-  B
-  C
-  D
-  E
-  F
+enum Track {
+  NETWORK
+  CYBERSECURITY
+  DATA_SCIENCE
+  AI
 }
 
-/// End-of-phase evidence. Speaking is a written transcript the teacher scores.
+/// Language of authored course material. The interface language is separate.
+enum ContentLocale {
+  ID
+  EN
+}
+
+/// Saved interface language. Anonymous visitors use the locale cookie.
+enum UiLocale {
+  ID
+  EN
+}
+
+/// Capstone the instructor scores after every lesson is complete.
 enum ProjectKind {
-  WRITING
-  SPEAKING
+  LAB_REPORT
+  ANALYSIS
+  DESIGN
+  NOTEBOOK
 }
 
 enum LessonType {
@@ -134,6 +143,7 @@ model User {
   streakCount   Int       @default(0)
   /// Calendar date of the last rewarded activity in Asia/Jakarta.
   lastActiveOn  DateTime? @db.Date
+  locale        UiLocale  @default(ID)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -172,12 +182,15 @@ model Course {
   title        String
   slug         String       @unique
   description  String
-  level        CefrLevel
+  level        SkillBand
+  track        Track
+  contentLocale ContentLocale @default(ID)
+  /// The other-language edition of this course, when the instructor published one.
+  pairedCourseId String?       @unique @db.Uuid
   /// Whole IDR amount charged at checkout. The client cannot override it.
   price          Decimal       @db.Decimal(12, 2)
   /// Public https cover shown on the catalog. Empty when the card uses a plain panel.
   coverImageUrl  String?
-  phase          LearningPhase?
   /// Course-level capaian pembelajaran.
   outcome        String?
   status         CourseStatus  @default(DRAFT)
@@ -186,6 +199,8 @@ model Course {
   updatedAt      DateTime      @updatedAt
 
   instructor           User                @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Restrict)
+  pairedCourse         Course?             @relation("CourseLocalePair", fields: [pairedCourseId], references: [id], onDelete: SetNull)
+  localePair           Course?             @relation("CourseLocalePair")
   modules              Module[]
   enrollments          Enrollment[]
   certificates         Certificate[]
@@ -195,7 +210,7 @@ model Course {
   classes              CourseClass[]
 
   @@index([instructorId])
-  @@index([status, level])
+  @@index([status, track])
   @@map("courses")
 }
 

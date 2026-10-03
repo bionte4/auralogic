@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProgressStatus, Role } from '@prisma/client';
+import { ProgressStatus, ProjectKind, Role } from '@prisma/client';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import { PrismaService } from '../prisma/prisma.service';
 import { enrollmentAccessDenial } from '../progress/enrollment-access';
@@ -17,7 +17,7 @@ export interface PhaseProjectView {
     id: string;
     title: string;
     prompt: string;
-    kind: 'WRITING' | 'SPEAKING';
+    kind: ProjectKind;
     rubric: string;
   } | null;
   submission: {

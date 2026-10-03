@@ -1,4 +1,4 @@
-import type { CourseSummary, LearningPhase } from '@/lib/courses';
+import type { ContentLocale, CourseSummary, LearningTrack, SkillBand } from '@/lib/courses';
 
 export type PriceBand = '' | 'under-100k' | '100k-500k' | 'over-500k';
 
@@ -21,13 +21,21 @@ export function matchesPriceBand(price: string, band: PriceBand): boolean {
 
 export function filterCatalog(
   courses: readonly CourseSummary[],
-  filters: { phase: LearningPhase | ''; level: CourseSummary['level'] | ''; price: PriceBand },
+  filters: {
+    track: LearningTrack | '';
+    level: SkillBand | '';
+    contentLocale: ContentLocale | '';
+    price: PriceBand;
+  },
 ): CourseSummary[] {
   return courses.filter((course) => {
-    if (filters.phase && course.phase !== filters.phase) {
+    if (filters.track && course.track !== filters.track) {
       return false;
     }
     if (filters.level && course.level !== filters.level) {
+      return false;
+    }
+    if (filters.contentLocale && course.contentLocale !== filters.contentLocale) {
       return false;
     }
     return matchesPriceBand(course.price, filters.price);

@@ -17,6 +17,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: AppRole;
+  locale?: 'ID' | 'EN';
 }
 
 export function sessionFromUser(user: AuthUser): Session {

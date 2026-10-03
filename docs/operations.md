@@ -1,6 +1,6 @@
 # Operations guide
 
-This is the production layout for Fluentis on one Ubuntu VPS.
+This is the production layout for Auralogic on one Ubuntu VPS.
 
 | Public name | Points at | Process |
 | --- | --- | --- |
@@ -129,7 +129,7 @@ Registration on the website creates students only. Create the first super admin 
 cd /opt/fluentis
 sudo docker compose exec \
   -e ADMIN_EMAIL='admin@fluentis.web.id' \
-  -e ADMIN_NAME='Fluentis Admin' \
+  -e ADMIN_NAME='Auralogic Admin' \
   -e ADMIN_PASSWORD='' \
   backend node -e '
 const { PrismaClient } = require("@prisma/client");

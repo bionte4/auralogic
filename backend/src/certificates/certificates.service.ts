@@ -29,7 +29,7 @@ interface CertificateRow {
   issuedAt: Date;
   pdfBytes: Uint8Array | null;
   user: { name: string };
-  course: { title: string };
+  course: { title: string; contentLocale: 'ID' | 'EN' };
 }
 
 @Injectable()
@@ -64,7 +64,7 @@ export class CertificatesService {
         id: true,
         issuedAt: true,
         user: { select: { name: true } },
-        course: { select: { title: true } },
+        course: { select: { title: true, contentLocale: true } },
       },
     });
     if (!row) {
@@ -92,7 +92,7 @@ export class CertificatesService {
     const pdf = await this.ensurePdf(row);
     return new StreamableFile(pdf, {
       type: 'application/pdf',
-      disposition: `${disposition}; filename="fluentis-${row.id}.pdf"`,
+      disposition: `${disposition}; filename="auralogic-${row.id}.pdf"`,
     });
   }
 
@@ -101,12 +101,14 @@ export class CertificatesService {
       return Buffer.from(row.pdfBytes);
     }
     const verifyUrl = `${readAppEnv().frontendOrigin}/verify/${row.id}`;
+    const locale = row.course.contentLocale === 'ID' ? 'ID' : 'EN';
     const html = await renderCertificateHtml({
       studentName: row.user.name,
       courseName: row.course.title,
-      completionDate: formatCompletionDate(row.issuedAt),
+      completionDate: formatCompletionDate(row.issuedAt, locale),
       certificateId: row.id,
       verifyUrl,
+      locale,
     });
     const pdf = await this.engine.render(html);
     const stored = new Uint8Array(pdf.byteLength);
@@ -127,7 +129,7 @@ export class CertificatesService {
         issuedAt: true,
         pdfBytes: true,
         user: { select: { name: true } },
-        course: { select: { title: true } },
+        course: { select: { title: true, contentLocale: true } },
       },
     });
     if (!row) {

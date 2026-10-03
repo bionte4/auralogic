@@ -4,12 +4,13 @@ import { ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
-import { BrandMark } from '@/components/brand-mark';
+import { BrandLockup } from '@/components/brand-mark';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
+import { fromUiLocale, writeLocaleCookie } from '@/lib/locale';
 import { clearSession, isStaffRole, saveSession, type AuthUser } from '@/lib/session';
 
 interface LoginResult {
@@ -39,6 +40,9 @@ export default function InstructorLoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const session = saveSession(result.user);
+      if (result.user.locale) {
+        writeLocaleCookie(fromUiLocale(result.user.locale));
+      }
       if (!isStaffRole(session.role)) {
         clearSession();
         setError('This dashboard is for instructors and super admins.');
@@ -67,8 +71,7 @@ export default function InstructorLoginPage() {
           }}
         />
         <div className="relative flex w-full items-center gap-3">
-          <BrandMark className="h-10 w-10" />
-          <span className="text-sm font-medium tracking-tight">Fluentis</span>
+          <BrandLockup markClassName="h-10 w-10" className="text-sm" />
           <div className="ml-auto">
             <ThemeSwitcher />
           </div>

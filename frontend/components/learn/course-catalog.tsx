@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
 import { filterCatalog, type PriceBand } from '@/lib/catalog-filters';
-import { CEFR_LEVELS, formatIdr } from '@/lib/course-draft';
-import type { CourseSummary, LearningPhase } from '@/lib/courses';
-import { LEARNING_PHASES, phaseLabel } from '@/lib/learning-phase';
+import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, formatIdr } from '@/lib/course-draft';
+import type { ContentLocale, CourseSummary, LearningTrack, SkillBand } from '@/lib/courses';
 
 interface CheckoutResult {
   checkoutUrl: string | null;
@@ -27,12 +27,14 @@ export function CourseCatalog({
   courses: CourseSummary[];
   enrollments: EnrollmentMark[];
 }) {
+  const { m } = useI18n();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [phase, setPhase] = useState<LearningPhase | ''>('');
-  const [level, setLevel] = useState<CourseSummary['level'] | ''>('');
+  const [track, setTrack] = useState<LearningTrack | ''>('');
+  const [level, setLevel] = useState<SkillBand | ''>('');
+  const [contentLocale, setContentLocale] = useState<ContentLocale | ''>('');
   const [price, setPrice] = useState<PriceBand>('');
-  const visible = filterCatalog(courses, { phase, level, price });
+  const visible = filterCatalog(courses, { track, level, contentLocale, price });
   const enrolled = new Map(enrollments.map((item) => [item.courseId, item.accessGranted]));
 
   async function choose(courseId: string): Promise<void> {
@@ -44,12 +46,12 @@ export function CourseCatalog({
         body: JSON.stringify({ channel: 'REDIRECT' }),
       });
       if (!result.checkoutUrl) {
-        setError('The payment page is not ready yet. Try again in a moment.');
+        setError(m.catalog.checkoutMissing);
         return;
       }
       window.location.assign(result.checkoutUrl);
     } catch (caught: unknown) {
-      setError(caught instanceof ApiError ? caught.message : 'Could not start checkout.');
+      setError(caught instanceof ApiError ? caught.message : m.catalog.checkoutError);
     } finally {
       setPendingId(null);
     }
@@ -58,66 +60,78 @@ export function CourseCatalog({
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Course catalog</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Choose a course yourself. Lessons open after the payment notification is verified.
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{m.catalog.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{m.catalog.lead}</p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Phase
+          {m.catalog.track}
           <select
             className="h-11 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
-            value={phase}
-            onChange={(event) => setPhase(event.target.value as LearningPhase | '')}
+            value={track}
+            onChange={(event) => setTrack(event.target.value as LearningTrack | '')}
           >
-            <option value="">All phases</option>
-            {LEARNING_PHASES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
+            <option value="">{m.catalog.allTracks}</option>
+            {TRACKS.map((item) => (
+              <option key={item} value={item}>
+                {m.tracks[item]}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Level
+          {m.catalog.band}
           <select
             className="h-11 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
             value={level}
-            onChange={(event) => setLevel(event.target.value as CourseSummary['level'] | '')}
+            onChange={(event) => setLevel(event.target.value as SkillBand | '')}
           >
-            <option value="">All levels</option>
-            {CEFR_LEVELS.map((item) => (
+            <option value="">{m.catalog.allBands}</option>
+            {SKILL_BANDS.map((item) => (
               <option key={item} value={item}>
-                {item}
+                {m.bands[item]}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Price
+          {m.catalog.language}
+          <select
+            className="h-11 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
+            value={contentLocale}
+            onChange={(event) => setContentLocale(event.target.value as ContentLocale | '')}
+          >
+            <option value="">{m.catalog.allLanguages}</option>
+            {CONTENT_LOCALES.map((item) => (
+              <option key={item} value={item}>
+                {m.languages[item]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          {m.catalog.price}
           <select
             className="h-11 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
             value={price}
             onChange={(event) => setPrice(event.target.value as PriceBand)}
           >
-            <option value="">Any price</option>
-            <option value="under-100k">Under Rp 100.000</option>
-            <option value="100k-500k">Rp 100.000 – Rp 500.000</option>
-            <option value="over-500k">Over Rp 500.000</option>
+            <option value="">{m.catalog.anyPrice}</option>
+            <option value="under-100k">{m.catalog.under100}</option>
+            <option value="100k-500k">{m.catalog.mid}</option>
+            <option value="over-500k">{m.catalog.over}</option>
           </select>
         </label>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {courses.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No published courses yet.</p>
+        <p className="text-sm text-muted-foreground">{m.catalog.empty}</p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No courses match these filters.</p>
+        <p className="text-sm text-muted-foreground">{m.catalog.noMatch}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((course) => {
             const access = enrolled.get(course.id);
-            const phase = phaseLabel(course.phase);
             return (
               <Card key={course.id} className="flex h-full flex-col overflow-hidden">
                 <Link href={`/learn/courses/${course.id}`} className="block aspect-video bg-muted">
@@ -125,13 +139,13 @@ export function CourseCatalog({
                     <img src={course.coverImageUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-end bg-gradient-to-br from-zinc-800 to-zinc-950 p-4 text-sm font-medium text-white">
-                      {phase ?? course.level}
+                      {m.tracks[course.track]}
                     </div>
                   )}
                 </Link>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
-                    <Badge>{course.level}</Badge>
+                    <Badge>{m.bands[course.level]}</Badge>
                     <p className="text-sm font-medium">{formatIdr(course.price)}</p>
                   </div>
                   <CardTitle className="text-lg leading-snug">
@@ -141,13 +155,12 @@ export function CourseCatalog({
                 <CardContent className="flex flex-1 flex-col gap-4">
                   <p className="line-clamp-3 text-sm text-muted-foreground">{course.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    {course.instructor.name}
-                    {phase ? ` · ${phase}` : ''}
+                    {course.instructor.name} · {m.tracks[course.track]} · {m.languages[course.contentLocale]}
                   </p>
                   <div className="mt-auto">
                     {access === true ? (
                       <Button asChild className="min-h-11 w-full">
-                        <Link href={`/learn/${course.id}`}>Continue</Link>
+                        <Link href={`/learn/${course.id}`}>{m.catalog.continue}</Link>
                       </Button>
                     ) : (
                       <Button
@@ -156,7 +169,7 @@ export function CourseCatalog({
                         disabled={pendingId === course.id}
                         onClick={() => void choose(course.id)}
                       >
-                        {pendingId === course.id ? 'Opening checkout…' : access === false ? 'Finish payment' : 'Choose course'}
+                        {pendingId === course.id ? m.catalog.opening : access === false ? m.catalog.finishPayment : m.catalog.choose}
                       </Button>
                     )}
                   </div>

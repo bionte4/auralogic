@@ -1,6 +1,6 @@
 # Student guide
 
-Fluentis teaches one level at a time. A lesson opens after every lesson in the previous level is complete, and after the course has been paid.
+Auralogic teaches one level at a time. A lesson opens after every lesson in the previous level is complete, and after the course has been paid.
 
 ## Create an account
 
@@ -24,7 +24,7 @@ While mail delivery is still in log mode, the school operator reads the link fro
 
 1. The public homepage lists published courses before you sign in. Open a course to read the outcome and the level list. **Choose course** asks you to sign in, then sends you to payment. Access stays closed until the payment notification is verified.
 2. After you sign in, `/learn` still lists the catalog. The first lesson of a course you have not paid for can play as a free preview.
-3. Finish payment at Midtrans. Access appears after Midtrans notifies Fluentis. Returning to the site from the bank page does not unlock the course by itself.
+3. Finish payment at Midtrans. Access appears after Midtrans notifies Auralogic. Returning to the site from the bank page does not unlock the course by itself.
 4. A course that is still unpaid stays closed.
 
 Corporate seats can be granted by a super admin. Those seats do not create a personal payment.
@@ -56,4 +56,4 @@ You cannot mark a later level complete by editing the page address. The API answ
 
 ## Certificate
 
-When every lesson in the course is complete, Fluentis issues a certificate. Download it from the student dashboard. Anyone who scans the QR code opens `/verify/<certificate-id>` and can confirm the certificate without seeing your email.
+When every lesson in the course is complete, Auralogic issues a certificate. Download it from the student dashboard. Anyone who scans the QR code opens `/verify/<certificate-id>` and can confirm the certificate without seeing your email.

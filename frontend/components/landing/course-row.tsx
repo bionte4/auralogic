@@ -1,27 +1,54 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { formatIdr } from '@/lib/course-draft';
-import type { LearningPhase, PublicCourseCard } from '@/lib/courses';
-import { LEARNING_PHASES, phaseLabel } from '@/lib/learning-phase';
+import { TRACKS, formatIdr } from '@/lib/course-draft';
+import type { LearningTrack, PublicCourseCard } from '@/lib/courses';
+
+function isTrack(value: string | null): value is LearningTrack {
+  return TRACKS.some((item) => item === value);
+}
 
 export function CourseRow() {
+  const { m } = useI18n();
+  const router = useRouter();
+  const params = useSearchParams();
+  const scroller = useRef<HTMLDivElement>(null);
   const [courses, setCourses] = useState<PublicCourseCard[] | null>(null);
-  const [phase, setPhase] = useState<LearningPhase | ''>('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'load' | string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
+  const query = params.get('q')?.trim() ?? '';
+  const trackParam = params.get('track');
+  const track: LearningTrack | '' = isTrack(trackParam) ? trackParam : '';
+
+  function selectTrack(next: LearningTrack | ''): void {
+    const search = new URLSearchParams(params.toString());
+    if (next) {
+      search.set('track', next);
+    } else {
+      search.delete('track');
+    }
+    const text = search.toString();
+    router.replace(text ? `/?${text}#catalog` : '/#catalog', { scroll: false });
+    setOpenId(null);
+  }
+
+  function scrollRow(direction: -1 | 1): void {
+    scroller.current?.scrollBy({ left: direction * 320, behavior: 'smooth' });
+  }
 
   useEffect(() => {
     void apiRequest<PublicCourseCard[]>('/courses/catalog')
       .then(setCourses)
       .catch((caught: unknown) => {
-        setError(caught instanceof ApiError ? caught.message : 'Could not load courses.');
+        setError(caught instanceof ApiError ? caught.message : 'load');
       });
   }, []);
 
@@ -66,43 +93,66 @@ export function CourseRow() {
     closeTimer.current = window.setTimeout(() => setOpenId(null), 140);
   }
 
-  const visible = (courses ?? []).filter((course) => !phase || course.phase === phase);
+  const visible = (courses ?? []).filter((course) => {
+    if (track && course.track !== track) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    const haystack = `${course.title} ${course.description} ${course.outcome ?? ''} ${course.instructor.name}`.toLowerCase();
+    return haystack.includes(query.toLowerCase());
+  });
   const openCourse = visible.find((course) => course.id === openId) ?? null;
 
   return (
-    <section id="catalog" className="mx-auto flex max-w-6xl scroll-mt-24 flex-col gap-5 px-4 py-16 sm:px-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Courses</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Click a course to read what you will learn. Payment stays on the course page.
-          </p>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <PhaseChip active={phase === ''} onClick={() => setPhase('')}>
-            All phases
-          </PhaseChip>
-          {LEARNING_PHASES.map((item) => (
-            <PhaseChip key={item.value} active={phase === item.value} onClick={() => setPhase(item.value)}>
-              {`Fase ${item.value}`}
-            </PhaseChip>
-          ))}
-        </div>
+    <section id="catalog" className="mx-auto flex max-w-7xl scroll-mt-24 flex-col gap-3 px-4 py-8 sm:px-6 sm:py-10">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{query ? `“${query}”` : m.home.skillsTitle}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{m.home.skillsLead}</p>
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {courses === null && !error ? <p className="text-sm text-muted-foreground">Loading courses…</p> : null}
-      {courses && visible.length === 0 ? <p className="text-sm text-muted-foreground">No published courses in this phase yet.</p> : null}
+      <div className="flex gap-6 overflow-x-auto border-b border-border" role="tablist" aria-label={m.catalog.track}>
+        <Tab active={track === ''} onClick={() => selectTrack('')}>
+          {m.catalog.allTracks}
+        </Tab>
+        {TRACKS.map((item) => (
+          <Tab key={item} active={track === item} onClick={() => selectTrack(item)}>
+            {m.tracks[item]}
+          </Tab>
+        ))}
+      </div>
+      {error ? <p className="text-sm text-destructive">{error === 'load' ? m.catalog.loadError : error}</p> : null}
+      {courses === null && !error ? <p className="text-sm text-muted-foreground">{m.catalog.loading}</p> : null}
+      {courses && visible.length === 0 ? <p className="text-sm text-muted-foreground">{m.catalog.noMatch}</p> : null}
       {visible.length > 0 ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {visible.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              open={openCourse?.id === course.id}
-              onOpen={() => holdOpen(course.id)}
-              onLeave={scheduleClose}
-            />
-          ))}
+        <div className="relative">
+          <button
+            type="button"
+            className="absolute left-0 top-16 z-10 hidden h-12 w-12 items-center justify-center rounded-full border border-border bg-background md:flex"
+            aria-label={m.home.prev}
+            onClick={() => scrollRow(-1)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div ref={scroller} className="flex snap-x gap-3 overflow-x-auto scroll-smooth px-1 pb-2 pt-1 md:px-10">
+            {visible.map((course) => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                open={openCourse?.id === course.id}
+                onOpen={() => holdOpen(course.id)}
+                onLeave={scheduleClose}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="absolute right-0 top-16 z-10 hidden h-12 w-12 items-center justify-center rounded-full border border-border bg-background md:flex"
+            aria-label={m.home.next}
+            onClick={() => scrollRow(1)}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
       ) : null}
       {openCourse ? <CoursePreview course={openCourse} onHold={() => holdOpen(openCourse.id)} onLeave={scheduleClose} /> : null}
@@ -121,51 +171,56 @@ function CourseCard({
   onOpen: () => void;
   onLeave: () => void;
 }) {
-  const phase = phaseLabel(course.phase);
-  const cardRef = useRef<HTMLButtonElement>(null);
+  const { m } = useI18n();
 
   return (
-    <button
-      ref={cardRef}
-      type="button"
+    <div
       data-course-card={course.id}
-      aria-expanded={open}
-      className={`w-72 shrink-0 rounded-xl border bg-card text-left ${open ? 'border-foreground' : 'border-border'}`}
-      onClick={onOpen}
+      className={`w-64 shrink-0 snap-start ${open ? 'relative z-20' : ''}`}
       onMouseEnter={onOpen}
       onMouseLeave={onLeave}
-      onFocus={onOpen}
-      onBlur={(event) => {
-        const next = event.relatedTarget;
-        if (next instanceof Element && next.closest('[role="dialog"]')) {
-          return;
-        }
-        onLeave();
-      }}
     >
-      <div className="aspect-video overflow-hidden rounded-t-xl bg-muted">
-        {course.coverImageUrl ? (
-          <img src={course.coverImageUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-end bg-zinc-900 p-4 text-sm font-medium text-white">{phase ?? course.level}</div>
-        )}
-      </div>
-      <div className="flex flex-col gap-2 p-4">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug">{course.title}</p>
-        <p className="text-xs text-muted-foreground">{course.instructor.name}</p>
-        <p className="pt-2 text-sm font-medium">{formatIdr(course.price)}</p>
-      </div>
-    </button>
+      <Link
+        href={`/courses/${course.id}`}
+        className="block overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        onFocus={onOpen}
+        onBlur={(event) => {
+          const next = event.relatedTarget;
+          if (next instanceof Element && next.closest('[role="dialog"]')) {
+            return;
+          }
+          onLeave();
+        }}
+      >
+        <div className="aspect-video overflow-hidden bg-zinc-950">
+          {course.coverImageUrl ? (
+            <img src={course.coverImageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-end bg-zinc-900 p-3 text-sm font-semibold text-white">{m.tracks[course.track]}</div>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 p-3">
+          <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">{course.title}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {course.instructor.name} · {m.bands[course.level]}
+          </p>
+          <p className="text-sm font-semibold">{formatIdr(course.price)}</p>
+        </div>
+      </Link>
+    </div>
   );
 }
 
 function CoursePreview({ course, onHold, onLeave }: { course: PublicCourseCard; onHold: () => void; onLeave: () => void }) {
   const titleId = useId();
   const [box, setBox] = useState<{ top: number; left: number } | null>(null);
-  const phase = phaseLabel(course.phase);
-  const facts = [course.durationMinutes > 0 ? `${course.durationMinutes} min` : null, course.level, phase].filter(
-    (item): item is string => Boolean(item),
-  );
+  const { locale, m } = useI18n();
+  const facts = [
+    course.durationMinutes > 0 ? `${course.durationMinutes} ${m.catalog.minutes}` : null,
+    m.bands[course.level],
+    m.tracks[course.track],
+    m.languages[course.contentLocale],
+  ].filter((item): item is string => Boolean(item));
 
   useEffect(() => {
     const card = document.querySelector(`[data-course-card="${course.id}"]`);
@@ -216,7 +271,7 @@ function CoursePreview({ course, onHold, onLeave }: { course: PublicCourseCard; 
     <aside
       role="dialog"
       aria-labelledby={titleId}
-      className="fixed z-40 w-80 rounded-xl border border-border bg-card p-4"
+      className="fixed z-40 w-80 rounded-2xl border border-border bg-card p-5 shadow-2xl"
       style={{ top: box.top, left: box.left }}
       onMouseEnter={onHold}
       onMouseLeave={onLeave}
@@ -225,7 +280,9 @@ function CoursePreview({ course, onHold, onLeave }: { course: PublicCourseCard; 
         {course.title}
       </h3>
       {course.publishedAt ? (
-        <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">Updated {formatMonth(course.publishedAt)}</p>
+        <p className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          {m.catalog.updated} {formatMonth(course.publishedAt, locale)}
+        </p>
       ) : null}
       <p className="mt-2 text-xs text-muted-foreground">{facts.join(' · ')}</p>
       <p className="mt-3 text-sm leading-6">{course.outcome ?? course.description}</p>
@@ -240,22 +297,24 @@ function CoursePreview({ course, onHold, onLeave }: { course: PublicCourseCard; 
         </ul>
       ) : null}
       <Button asChild className="mt-4 min-h-11 w-full">
-        <Link href={`/courses/${course.id}`}>View course</Link>
+        <Link href={`/courses/${course.id}`}>{m.catalog.view}</Link>
       </Button>
     </aside>,
     document.body,
   );
 }
 
-function formatMonth(value: string): string {
-  return new Date(value).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
+function formatMonth(value: string, locale: 'id' | 'en'): string {
+  return new Date(value).toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
 }
 
-function PhaseChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
+function Tab({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
   return (
     <button
       type="button"
-      className={`h-9 shrink-0 rounded-full border px-3 text-sm ${active ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground'}`}
+      role="tab"
+      aria-selected={active}
+      className={`h-11 shrink-0 border-b-2 text-sm font-bold ${active ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'}`}
       onClick={onClick}
     >
       {children}

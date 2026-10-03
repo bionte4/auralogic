@@ -3,7 +3,16 @@ export interface InstructorSummary {
   name: string;
 }
 
-export type LearningPhase = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type LearningTrack = 'NETWORK' | 'CYBERSECURITY' | 'DATA_SCIENCE' | 'AI';
+export type SkillBand = 'FOUNDATION' | 'PRACTITIONER' | 'ADVANCED';
+export type ContentLocale = 'ID' | 'EN';
+
+export interface CoursePair {
+  id: string;
+  title: string;
+  contentLocale: ContentLocale;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+}
 
 export interface LessonSummary {
   id: string;
@@ -29,14 +38,16 @@ export interface CourseSummary {
   title: string;
   slug: string;
   description: string;
-  level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+  level: SkillBand;
+  track: LearningTrack;
+  contentLocale: ContentLocale;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   publishedAt: string | null;
   price: string;
   coverImageUrl: string | null;
-  phase: LearningPhase | null;
   outcome: string | null;
   instructor: InstructorSummary;
+  pairedCourse: CoursePair | null;
 }
 
 export interface CourseDetail extends CourseSummary {

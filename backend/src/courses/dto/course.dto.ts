@@ -1,6 +1,18 @@
-import { CefrLevel, CourseStatus, LearningPhase } from '@prisma/client';
+import { ContentLocale, CourseStatus, SkillBand, Track } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -21,8 +33,14 @@ export class CreateCourseDto {
   @MaxLength(10000)
   description!: string;
 
-  @IsEnum(CefrLevel)
-  level!: CefrLevel;
+  @IsEnum(SkillBand)
+  level!: SkillBand;
+
+  @IsEnum(Track)
+  track!: Track;
+
+  @IsEnum(ContentLocale)
+  contentLocale!: ContentLocale;
 
   @Type(() => Number)
   @IsInt()
@@ -36,10 +54,6 @@ export class CreateCourseDto {
   @MaxLength(500)
   @Matches(/^https:\/\/\S+$/, { message: 'coverImageUrl must be an https URL.' })
   coverImageUrl?: string | null;
-
-  @IsOptional()
-  @IsEnum(LearningPhase)
-  phase?: LearningPhase | null;
 
   @IsOptional()
   @IsString()
@@ -67,8 +81,21 @@ export class UpdateCourseDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(CefrLevel)
-  level?: CefrLevel;
+  @IsEnum(SkillBand)
+  level?: SkillBand;
+
+  @IsOptional()
+  @IsEnum(Track)
+  track?: Track;
+
+  @IsOptional()
+  @IsEnum(ContentLocale)
+  contentLocale?: ContentLocale;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID()
+  pairedCourseId?: string | null;
 
   @IsOptional()
   @IsEnum(CourseStatus)
@@ -89,10 +116,6 @@ export class UpdateCourseDto {
   coverImageUrl?: string | null;
 
   @IsOptional()
-  @IsEnum(LearningPhase)
-  phase?: LearningPhase | null;
-
-  @IsOptional()
   @IsString()
   @MaxLength(2000)
   outcome?: string | null;
@@ -104,6 +127,14 @@ export class ListCoursesQueryDto {
   status?: CourseStatus;
 
   @IsOptional()
-  @IsEnum(CefrLevel)
-  level?: CefrLevel;
+  @IsEnum(SkillBand)
+  level?: SkillBand;
+
+  @IsOptional()
+  @IsEnum(Track)
+  track?: Track;
+
+  @IsOptional()
+  @IsEnum(ContentLocale)
+  contentLocale?: ContentLocale;
 }

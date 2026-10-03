@@ -1,13 +1,23 @@
-export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+export const SKILL_BANDS = ['FOUNDATION', 'PRACTITIONER', 'ADVANCED'] as const;
+export const TRACKS = ['NETWORK', 'CYBERSECURITY', 'DATA_SCIENCE', 'AI'] as const;
+export const CONTENT_LOCALES = ['ID', 'EN'] as const;
+export const PROJECT_KINDS = ['LAB_REPORT', 'ANALYSIS', 'DESIGN', 'NOTEBOOK'] as const;
 export const LESSON_TYPES = ['VIDEO', 'READING', 'QUIZ'] as const;
+export type ProjectKind = (typeof PROJECT_KINDS)[number];
 
-export type CefrLevel = (typeof CEFR_LEVELS)[number];
+export type SkillBand = (typeof SKILL_BANDS)[number];
+export type Track = (typeof TRACKS)[number];
+export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 export type LessonType = (typeof LESSON_TYPES)[number];
+
+export type CourseDraftError = 'title' | 'description' | 'band' | 'track' | 'locale' | 'price' | 'price-range';
 
 export interface CourseDraft {
   title: string;
   description: string;
-  level: CefrLevel | '';
+  level: SkillBand | '';
+  track: Track | '';
+  contentLocale: ContentLocale | '';
   price: string;
 }
 
@@ -17,22 +27,28 @@ export interface LessonDraft {
   passingScore: string;
 }
 
-export function validateCourseDraft(draft: CourseDraft): string | null {
+export function validateCourseDraft(draft: CourseDraft): CourseDraftError | null {
   if (draft.title.trim().length < 3) {
-    return 'Course title must be at least 3 characters.';
+    return 'title';
   }
   if (draft.description.trim().length < 1) {
-    return 'Course description is required.';
+    return 'description';
   }
-  if (!CEFR_LEVELS.some((level) => level === draft.level)) {
-    return 'Choose a CEFR level.';
+  if (!SKILL_BANDS.some((level) => level === draft.level)) {
+    return 'band';
+  }
+  if (!TRACKS.some((track) => track === draft.track)) {
+    return 'track';
+  }
+  if (!CONTENT_LOCALES.some((locale) => locale === draft.contentLocale)) {
+    return 'locale';
   }
   if (!/^\d+$/.test(draft.price.trim())) {
-    return 'Price must be a whole IDR amount.';
+    return 'price';
   }
   const price = Number(draft.price);
   if (price < 1 || price > 100_000_000) {
-    return 'Price must be between 1 and 100,000,000 IDR.';
+    return 'price-range';
   }
   return null;
 }

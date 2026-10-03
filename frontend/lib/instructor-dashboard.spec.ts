@@ -12,11 +12,20 @@ describe('instructor dashboard helpers', () => {
     expect(parseProfile(JSON.stringify({ userId: 'x', email: 'a@b.c', name: 'A', role: 'ADMIN' }))).toBeNull();
   });
 
-  it('rejects an incomplete course draft and accepts a priced CEFR course', () => {
-    expect(validateCourseDraft({ title: 'Hi', description: 'Business English', level: 'B1', price: '250000' })).toMatch(
-      /at least 3/,
+  it('rejects an incomplete course draft and accepts a priced technical course', () => {
+    expect(validateCourseDraft({ title: 'Hi', description: 'Subnetting', level: 'FOUNDATION', track: 'NETWORK', contentLocale: 'ID', price: '250000' })).toBe(
+      'title',
     );
-    expect(validateCourseDraft({ title: 'Business English', description: 'Introductions', level: 'B1', price: '250000' })).toBeNull();
+    expect(
+      validateCourseDraft({
+        title: 'Network Fondasi',
+        description: 'Subnetting',
+        level: 'FOUNDATION',
+        track: 'NETWORK',
+        contentLocale: 'ID',
+        price: '250000',
+      }),
+    ).toBeNull();
     expect(validateLessonDraft({ title: 'Quiz 1', type: 'QUIZ', passingScore: '' })).toMatch(/passing score/);
   });
 

@@ -10,12 +10,31 @@ export interface MailTransport {
 
 export const MAIL_TRANSPORT = Symbol('MAIL_TRANSPORT');
 
+type MailLocale = 'ID' | 'EN';
+
+function mailLocale(locale: MailLocale | undefined): MailLocale {
+  return locale === 'ID' ? 'ID' : 'EN';
+}
+
 export function paymentActivatedMessage(input: {
   name: string;
   courseTitle: string;
   amount: string;
   courseUrl: string;
+  locale?: MailLocale;
 }): OutboundMessage {
+  if (mailLocale(input.locale) === 'ID') {
+    return {
+      to: '',
+      subject: `Pembayaran diterima untuk ${input.courseTitle}`,
+      text: [
+        `Halo ${input.name},`,
+        '',
+        `Kami menerima pembayaran IDR ${input.amount} dan mengaktifkan pendaftaran Anda di ${input.courseTitle}.`,
+        `Buka kursus: ${input.courseUrl}`,
+      ].join('\n'),
+    };
+  }
   return {
     to: '',
     subject: `Payment received for ${input.courseTitle}`,
@@ -33,7 +52,20 @@ export function enrollmentGrantedMessage(input: {
   courseTitle: string;
   courseUrl: string;
   temporaryPassword: string | null;
+  locale?: MailLocale;
 }): OutboundMessage {
+  if (mailLocale(input.locale) === 'ID') {
+    const lines = [
+      `Halo ${input.name},`,
+      '',
+      `Pendaftaran Anda di ${input.courseTitle} sudah aktif.`,
+      `Buka kursus: ${input.courseUrl}`,
+    ];
+    if (input.temporaryPassword) {
+      lines.push('', `Kata sandi sementara: ${input.temporaryPassword}`, 'Masuk, lalu ganti kata sandi setelah kunjungan pertama.');
+    }
+    return { to: '', subject: `Pendaftaran aktif untuk ${input.courseTitle}`, text: lines.join('\n') };
+  }
   const lines = [
     `Hello ${input.name},`,
     '',
@@ -46,14 +78,29 @@ export function enrollmentGrantedMessage(input: {
   return { to: '', subject: `Enrollment active for ${input.courseTitle}`, text: lines.join('\n') };
 }
 
-export function passwordResetMessage(input: { name: string; resetUrl: string }): OutboundMessage {
+export function passwordResetMessage(input: { name: string; resetUrl: string; locale?: MailLocale }): OutboundMessage {
+  if (mailLocale(input.locale) === 'ID') {
+    return {
+      to: '',
+      subject: 'Atur ulang kata sandi Auralogic',
+      text: [
+        `Halo ${input.name},`,
+        '',
+        'Ada permintaan untuk mengatur ulang kata sandi akun Auralogic Anda.',
+        `Pilih kata sandi baru: ${input.resetUrl}`,
+        '',
+        'Tautan ini kedaluwarsa dalam 15 menit dan hanya bisa dipakai sekali.',
+        'Abaikan email ini jika Anda tidak memintanya.',
+      ].join('\n'),
+    };
+  }
   return {
     to: '',
-    subject: 'Reset your Fluentis password',
+    subject: 'Reset your Auralogic password',
     text: [
       `Hello ${input.name},`,
       '',
-      'A password reset was requested for your Fluentis account.',
+      'A password reset was requested for your Auralogic account.',
       `Choose a new password: ${input.resetUrl}`,
       '',
       'This link expires in 15 minutes and can be used once.',
@@ -67,7 +114,21 @@ export function courseCompletedMessage(input: {
   courseTitle: string;
   certificateUrl: string;
   dashboardUrl: string;
+  locale?: MailLocale;
 }): OutboundMessage {
+  if (mailLocale(input.locale) === 'ID') {
+    return {
+      to: '',
+      subject: `Anda menyelesaikan ${input.courseTitle}`,
+      text: [
+        `Halo ${input.name},`,
+        '',
+        `Anda menyelesaikan setiap modul ${input.courseTitle}.`,
+        `Periksa sertifikat: ${input.certificateUrl}`,
+        `Unduh dari dasbor: ${input.dashboardUrl}`,
+      ].join('\n'),
+    };
+  }
   return {
     to: '',
     subject: `You completed ${input.courseTitle}`,

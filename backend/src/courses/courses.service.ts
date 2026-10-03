@@ -27,20 +27,24 @@ import type { CreateModuleDto, UpdateModuleDto } from './dto/module.dto';
 
 const instructorSelect = { id: true, name: true } satisfies Prisma.UserSelect;
 
+const pairSelect = { id: true, title: true, contentLocale: true, status: true } satisfies Prisma.CourseSelect;
+
 const courseSummarySelect = {
   id: true,
   title: true,
   slug: true,
   description: true,
   level: true,
+  track: true,
+  contentLocale: true,
   status: true,
   publishedAt: true,
   price: true,
   coverImageUrl: true,
-  phase: true,
   outcome: true,
   instructorId: true,
   instructor: { select: instructorSelect },
+  pairedCourse: { select: pairSelect },
 } satisfies Prisma.CourseSelect;
 
 type CourseSummaryRow = Prisma.CourseGetPayload<{ select: typeof courseSummarySelect }>;
@@ -60,9 +64,10 @@ export class CoursesService {
         slug: dto.slug ?? slugify(dto.title),
         description: dto.description.trim(),
         level: dto.level,
+        track: dto.track,
+        contentLocale: dto.contentLocale,
         price: new Prisma.Decimal(dto.price),
         coverImageUrl: httpsOrNull(dto.coverImageUrl),
-        phase: dto.phase ?? null,
         outcome: blankToNull(dto.outcome),
         status: CourseStatus.DRAFT,
       },
@@ -75,6 +80,12 @@ export class CoursesService {
     const where: Prisma.CourseWhereInput = {};
     if (query.level) {
       where.level = query.level;
+    }
+    if (query.track) {
+      where.track = query.track;
+    }
+    if (query.contentLocale) {
+      where.contentLocale = query.contentLocale;
     }
 
     if (user.role === Role.STUDENT) {
@@ -305,9 +316,10 @@ export class CoursesService {
     if (dto.slug !== undefined) data.slug = dto.slug;
     if (dto.description !== undefined) data.description = dto.description.trim();
     if (dto.level !== undefined) data.level = dto.level;
+    if (dto.track !== undefined) data.track = dto.track;
+    if (dto.contentLocale !== undefined) data.contentLocale = dto.contentLocale;
     if (dto.price !== undefined) data.price = new Prisma.Decimal(dto.price);
     if (dto.coverImageUrl !== undefined) data.coverImageUrl = httpsOrNull(dto.coverImageUrl);
-    if (dto.phase !== undefined) data.phase = dto.phase;
     if (dto.outcome !== undefined) data.outcome = blankToNull(dto.outcome);
     if (dto.status !== undefined) {
       data.status = dto.status;
@@ -321,8 +333,21 @@ export class CoursesService {
       data,
       select: courseSummarySelect,
     });
+    if (dto.pairedCourseId !== undefined) {
+      await this.linkLocalePair(user, courseId, dto.pairedCourseId);
+    }
     await this.cache?.delete(courseStructureKey(courseId));
-    return toCourseSummary(course);
+    if (dto.pairedCourseId) {
+      await this.cache?.delete(courseStructureKey(dto.pairedCourseId));
+    }
+    if (dto.pairedCourseId === undefined) {
+      return toCourseSummary(course);
+    }
+    const refreshed = await this.prisma.course.findUniqueOrThrow({
+      where: { id: courseId },
+      select: courseSummarySelect,
+    });
+    return toCourseSummary(refreshed);
   }
 
   async remove(user: AuthenticatedUser, courseId: string): Promise<void> {
@@ -491,6 +516,34 @@ export class CoursesService {
     }
     throw new NotFoundException('Course not found.');
   }
+
+  private async linkLocalePair(user: AuthenticatedUser, courseId: string, pairedCourseId: string | null): Promise<void> {
+    if (pairedCourseId === null) {
+      await this.prisma.course.update({ where: { id: courseId }, data: { pairedCourseId: null } });
+      await this.prisma.course.updateMany({ where: { pairedCourseId: courseId }, data: { pairedCourseId: null } });
+      return;
+    }
+    if (pairedCourseId === courseId) {
+      throw new BadRequestException('A course cannot be paired with itself.');
+    }
+    const other = await this.prisma.course.findUnique({
+      where: { id: pairedCourseId },
+      select: { id: true, instructorId: true },
+    });
+    if (!other) {
+      throw new NotFoundException('Paired course not found.');
+    }
+    if (user.role !== Role.SUPER_ADMIN && other.instructorId !== user.id) {
+      throw new ForbiddenException('You can only pair your own courses.');
+    }
+    await this.prisma.course.updateMany({
+      where: { OR: [{ id: courseId }, { id: other.id }, { pairedCourseId: courseId }, { pairedCourseId: other.id }] },
+      data: { pairedCourseId: null },
+    });
+    await this.prisma.course.update({ where: { id: courseId }, data: { pairedCourseId: other.id } });
+    await this.prisma.course.update({ where: { id: other.id }, data: { pairedCourseId: courseId } });
+    await this.cache?.delete(courseStructureKey(other.id));
+  }
 }
 
 function isPublishedCourseDetail(value: unknown): value is CourseDetail {
@@ -513,13 +566,15 @@ function toCourseSummary(course: CourseSummaryRow): CourseSummary {
     slug: course.slug,
     description: course.description,
     level: course.level,
+    track: course.track,
+    contentLocale: course.contentLocale,
     status: course.status,
     publishedAt: course.publishedAt,
     price: course.price.toFixed(2),
     coverImageUrl: course.coverImageUrl,
-    phase: course.phase,
     outcome: course.outcome,
     instructor: course.instructor,
+    pairedCourse: course.pairedCourse,
   };
 }
 
@@ -572,6 +627,7 @@ const publicReader: AuthenticatedUser = {
   email: 'public@fluentis.local',
   name: 'Public',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 function slugify(title: string): string {

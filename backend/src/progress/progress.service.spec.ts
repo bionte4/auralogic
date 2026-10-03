@@ -21,6 +21,7 @@ const student: AuthenticatedUser = {
   email: 'student@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 const instructor: AuthenticatedUser = {
@@ -28,6 +29,7 @@ const instructor: AuthenticatedUser = {
   email: 'instructor@fluentis.test',
   name: 'Bima',
   role: Role.INSTRUCTOR,
+  locale: 'ID',
 };
 
 function lessonAt(orderIndex: number, status: CourseStatus = CourseStatus.PUBLISHED) {

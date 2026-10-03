@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
 import { courseReturnPath } from '@/lib/course-return';
+import { fromUiLocale, writeLocaleCookie } from '@/lib/locale';
 import { clearSession, saveSession, type AuthUser } from '@/lib/session';
 
 interface LoginResult {
@@ -44,6 +45,9 @@ function StudentLoginForm() {
         body: JSON.stringify({ email, password }),
       });
       const session = saveSession(result.user);
+      if (result.user.locale) {
+        writeLocaleCookie(fromUiLocale(result.user.locale));
+      }
       if (session.role !== 'STUDENT') {
         clearSession();
         setError('This portal is for students.');

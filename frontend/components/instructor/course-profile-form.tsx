@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import type { CourseDetail, LearningPhase } from '@/lib/courses';
-import { LEARNING_PHASES } from '@/lib/learning-phase';
+import { CONTENT_LOCALES, TRACKS } from '@/lib/course-draft';
+import type { ContentLocale, CourseDetail, CourseSummary, LearningTrack } from '@/lib/courses';
 
 export function CourseProfileForm({
   course,
@@ -19,16 +20,26 @@ export function CourseProfileForm({
   onSaved: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
+  const { m } = useI18n();
   const [coverImageUrl, setCoverImageUrl] = useState(course.coverImageUrl ?? '');
-  const [phase, setPhase] = useState<LearningPhase | ''>(course.phase ?? '');
+  const [track, setTrack] = useState<LearningTrack>(course.track);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>(course.contentLocale);
+  const [pairedCourseId, setPairedCourseId] = useState(course.pairedCourse?.id ?? '');
+  const [options, setOptions] = useState<CourseSummary[]>([]);
   const [outcome, setOutcome] = useState(course.outcome ?? '');
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    void apiRequest<CourseSummary[]>('/courses')
+      .then((rows) => setOptions(rows.filter((item) => item.id !== course.id)))
+      .catch(() => setOptions([]));
+  }, [course.id]);
 
   async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const trimmedCover = coverImageUrl.trim();
     if (trimmedCover && !trimmedCover.startsWith('https://')) {
-      onError('Cover image must be an https URL.');
+      onError(m.studio.coverError);
       return;
     }
     setPending(true);
@@ -38,13 +49,15 @@ export function CourseProfileForm({
         method: 'PATCH',
         body: JSON.stringify({
           coverImageUrl: trimmedCover || null,
-          phase: phase || null,
+          track,
+          contentLocale,
+          pairedCourseId: pairedCourseId || null,
           outcome: outcome.trim() || null,
         }),
       });
       await onSaved();
     } catch (caught) {
-      onError(caught instanceof ApiError ? caught.message : 'Could not save the course profile.');
+      onError(caught instanceof ApiError ? caught.message : m.studio.profileError);
     } finally {
       setPending(false);
     }
@@ -53,12 +66,12 @@ export function CourseProfileForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Catalog and curriculum</CardTitle>
+        <CardTitle>{m.studio.profile}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="flex flex-col gap-3" onSubmit={(event) => void save(event)}>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="cover-url">Cover image URL</Label>
+            <Label htmlFor="cover-url">{m.studio.cover}</Label>
             <Input
               id="cover-url"
               placeholder="https://"
@@ -67,33 +80,63 @@ export function CourseProfileForm({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="course-phase">Kurikulum Merdeka phase</Label>
+            <Label htmlFor="course-track">{m.studio.track}</Label>
             <select
-              id="course-phase"
+              id="course-track"
               className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-              value={phase}
-              onChange={(event) => setPhase(event.target.value as LearningPhase | '')}
+              value={track}
+              onChange={(event) => setTrack(event.target.value as LearningTrack)}
             >
-              <option value="">No phase</option>
-              {LEARNING_PHASES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
+              {TRACKS.map((item) => (
+                <option key={item} value={item}>
+                  {m.tracks[item]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="course-outcome">Learning outcome</Label>
+            <Label htmlFor="course-locale">{m.studio.materialLanguage}</Label>
+            <select
+              id="course-locale"
+              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+              value={contentLocale}
+              onChange={(event) => setContentLocale(event.target.value as ContentLocale)}
+            >
+              {CONTENT_LOCALES.map((item) => (
+                <option key={item} value={item}>
+                  {m.languages[item]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="course-pair">{m.studio.pair}</Label>
+            <select
+              id="course-pair"
+              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+              value={pairedCourseId}
+              onChange={(event) => setPairedCourseId(event.target.value)}
+            >
+              <option value="">{m.studio.noPair}</option>
+              {options.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title} · {m.languages[item.contentLocale]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="course-outcome">{m.studio.outcome}</Label>
             <Textarea
               id="course-outcome"
               maxLength={2000}
               value={outcome}
               onChange={(event) => setOutcome(event.target.value)}
-              placeholder="What a student can do after this course"
+              placeholder={m.studio.outcomeHint}
             />
           </div>
           <Button type="submit" disabled={pending} className="min-h-11 w-full sm:w-auto">
-            {pending ? 'Saving…' : 'Save profile'}
+            {pending ? m.studio.saving : m.studio.saveProfile}
           </Button>
         </form>
       </CardContent>

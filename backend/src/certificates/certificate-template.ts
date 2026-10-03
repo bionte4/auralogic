@@ -8,9 +8,27 @@ export interface CertificateTemplateInput {
   completionDate: string;
   certificateId: string;
   verifyUrl: string;
+  locale: 'ID' | 'EN';
 }
 
-const PLACEHOLDERS = ['studentName', 'courseName', 'completionDate', 'certificateId', 'verifyUrl', 'qrCode'] as const;
+const PLACEHOLDERS = ['studentName', 'courseName', 'completionDate', 'certificateId', 'verifyUrl', 'qrCode', 'lang', 'heading', 'lead', 'bridge', 'idLabel'] as const;
+
+const COPY = {
+  ID: {
+    lang: 'id',
+    heading: 'Sertifikat Penyelesaian',
+    lead: 'Menyatakan bahwa',
+    bridge: 'telah menyelesaikan setiap modul',
+    idLabel: 'ID sertifikat',
+  },
+  EN: {
+    lang: 'en',
+    heading: 'Certificate of Completion',
+    lead: 'This certifies that',
+    bridge: 'has completed every module of',
+    idLabel: 'Certificate ID',
+  },
+} as const;
 
 export function certificateTemplatePath(): string {
   return join(__dirname, '..', 'assets', 'certificate-template.html');
@@ -22,6 +40,7 @@ export async function renderCertificateHtml(input: CertificateTemplateInput): Pr
     margin: 1,
     width: 512,
   });
+  const copy = COPY[input.locale];
   const fields: Record<(typeof PLACEHOLDERS)[number], string> = {
     studentName: escapeHtml(input.studentName),
     courseName: escapeHtml(input.courseName),
@@ -29,13 +48,18 @@ export async function renderCertificateHtml(input: CertificateTemplateInput): Pr
     certificateId: escapeHtml(input.certificateId),
     verifyUrl: escapeHtml(input.verifyUrl),
     qrCode,
+    lang: copy.lang,
+    heading: escapeHtml(copy.heading),
+    lead: escapeHtml(copy.lead),
+    bridge: escapeHtml(copy.bridge),
+    idLabel: escapeHtml(copy.idLabel),
   };
   const template = readFileSync(certificateTemplatePath(), 'utf8');
-  return template.replace(/\{\{(studentName|courseName|completionDate|certificateId|verifyUrl|qrCode)\}\}/g, (token, key: (typeof PLACEHOLDERS)[number]) => fields[key] ?? token);
+  return template.replace(/\{\{(studentName|courseName|completionDate|certificateId|verifyUrl|qrCode|lang|heading|lead|bridge|idLabel)\}\}/g, (token, key: (typeof PLACEHOLDERS)[number]) => fields[key] ?? token);
 }
 
-export function formatCompletionDate(value: Date): string {
-  return new Intl.DateTimeFormat('en-GB', {
+export function formatCompletionDate(value: Date, locale: 'ID' | 'EN' = 'EN'): string {
+  return new Intl.DateTimeFormat(locale === 'ID' ? 'id-ID' : 'en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

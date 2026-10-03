@@ -1,6 +1,6 @@
 # Process flows
 
-These are the paths Fluentis actually follows. The browser cannot grant course access or skip a level. Both decisions are made by the API.
+These are the paths Auralogic actually follows. The browser cannot grant course access or skip a level. Both decisions are made by the API.
 
 ## 1. Accounts
 

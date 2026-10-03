@@ -8,7 +8,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <NextThemesProvider
       attribute="data-theme"
-      defaultTheme="dark"
+      defaultTheme="light"
       enableSystem={false}
       themes={THEMES.map((theme) => theme.id)}
       storageKey={THEME_STORAGE_KEY}

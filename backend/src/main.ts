@@ -30,7 +30,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   await app.listen(env.port);
-  Logger.log(`Fluentis API listening on port ${env.port}`, 'Bootstrap');
+  Logger.log(`Auralogic API listening on port ${env.port}`, 'Bootstrap');
 }
 
 void bootstrap();

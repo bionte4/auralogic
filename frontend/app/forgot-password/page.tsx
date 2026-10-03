@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Fluentis</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Auralogic</p>
             <ThemeSwitcher />
           </div>
           <CardTitle>Reset your password</CardTitle>

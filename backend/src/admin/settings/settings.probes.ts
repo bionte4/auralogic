@@ -19,8 +19,8 @@ export async function sendSmtpTest(config: SmtpConfig): Promise<string> {
   await transporter.sendMail({
     from: config.fromEmail,
     to: config.fromEmail,
-    subject: 'Fluentis SMTP test',
-    text: 'Fluentis confirmed this SMTP server can send mail.',
+    subject: 'Auralogic SMTP test',
+    text: 'Auralogic confirmed this SMTP server can send mail.',
   });
   return `A test message was sent to ${config.fromEmail}.`;
 }

@@ -42,28 +42,32 @@ export class NotificationService {
 
   async paymentActivated(notice: PaymentNotice): Promise<void> {
     const origin = safeOrigin();
+    const locale = await this.localeFor(notice.email);
     const message = paymentActivatedMessage({
       name: notice.name,
       courseTitle: notice.courseTitle,
       amount: notice.amount,
       courseUrl: `${origin}/learn/${notice.courseId}`,
+      locale,
     });
     await this.deliver({ ...message, to: notice.email });
   }
 
   async enrollmentGranted(notice: EnrollmentNotice): Promise<void> {
     const origin = safeOrigin();
+    const locale = await this.localeFor(notice.email);
     const message = enrollmentGrantedMessage({
       name: notice.name,
       courseTitle: notice.courseTitle,
       courseUrl: `${origin}/learn/${notice.courseId}`,
       temporaryPassword: notice.temporaryPassword,
+      locale,
     });
     await this.deliver({ ...message, to: notice.email });
   }
 
-  async passwordReset(input: { email: string; name: string; resetUrl: string }): Promise<void> {
-    const message = passwordResetMessage({ name: input.name, resetUrl: input.resetUrl });
+  async passwordReset(input: { email: string; name: string; resetUrl: string; locale?: 'ID' | 'EN' }): Promise<void> {
+    const message = passwordResetMessage({ name: input.name, resetUrl: input.resetUrl, locale: input.locale });
     await this.deliver({ ...message, to: input.email });
   }
 
@@ -72,7 +76,7 @@ export class NotificationService {
       where: { id: certificateId },
       select: {
         id: true,
-        user: { select: { email: true, name: true } },
+        user: { select: { email: true, name: true, locale: true } },
         course: { select: { title: true } },
       },
     });
@@ -85,8 +89,17 @@ export class NotificationService {
       courseTitle: certificate.course.title,
       certificateUrl: `${origin}/verify/${certificate.id}`,
       dashboardUrl: `${origin}/learn`,
+      locale: certificate.user.locale,
     });
     await this.deliver({ ...message, to: certificate.user.email });
+  }
+
+  private async localeFor(email: string): Promise<'ID' | 'EN'> {
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { locale: true },
+    });
+    return user?.locale === 'EN' ? 'EN' : 'ID';
   }
 
   private async deliver(message: OutboundMessage): Promise<void> {

@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, type FormEvent } from 'react';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useI18n } from '@/components/locale-provider';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
 import { courseReturnPath } from '@/lib/course-return';
+import { fromUiLocale, toUiLocale, writeLocaleCookie } from '@/lib/locale';
 import { saveSession, type AuthUser } from '@/lib/session';
 
 interface RegisterResult {
@@ -25,6 +28,7 @@ export default function RegisterPage() {
 
 function RegisterForm() {
   const router = useRouter();
+  const { locale } = useI18n();
   const nextPath = courseReturnPath(useSearchParams().get('next'));
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,9 +43,12 @@ function RegisterForm() {
     try {
       const result = await apiRequest<RegisterResult>('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, locale: toUiLocale(locale) }),
       });
       saveSession(result.user);
+      if (result.user.locale) {
+        writeLocaleCookie(fromUiLocale(result.user.locale));
+      }
       router.replace(nextPath ?? '/learn');
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Could not create the account.');
@@ -53,8 +60,11 @@ function RegisterForm() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Fluentis</p>
-        <ThemeSwitcher />
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Auralogic</p>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <ThemeSwitcher />
+        </div>
       </div>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Create a student account</h1>
       <p className="mt-2 text-sm text-muted-foreground">Use at least 8 characters, with a letter and a number.</p>

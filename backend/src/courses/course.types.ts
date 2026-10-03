@@ -1,4 +1,4 @@
-import type { CefrLevel, CourseStatus, EnrollmentStatus, LearningPhase, LessonType, PaymentStatus } from '@prisma/client';
+import type { ContentLocale, CourseStatus, EnrollmentStatus, LessonType, PaymentStatus, SkillBand, Track } from '@prisma/client';
 
 export interface InstructorSummary {
   id: string;
@@ -24,19 +24,28 @@ export interface ModuleSummary {
   lessons: LessonSummary[];
 }
 
+export interface CoursePair {
+  id: string;
+  title: string;
+  contentLocale: ContentLocale;
+  status: CourseStatus;
+}
+
 export interface CourseSummary {
   id: string;
   title: string;
   slug: string;
   description: string;
-  level: CefrLevel;
+  level: SkillBand;
+  track: Track;
+  contentLocale: ContentLocale;
   status: CourseStatus;
   publishedAt: Date | null;
   price: string;
   coverImageUrl: string | null;
-  phase: LearningPhase | null;
   outcome: string | null;
   instructor: InstructorSummary;
+  pairedCourse: CoursePair | null;
 }
 
 export interface CourseDetail extends CourseSummary {

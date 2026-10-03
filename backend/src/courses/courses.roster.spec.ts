@@ -11,6 +11,7 @@ const instructor: AuthenticatedUser = {
   email: 'bima@fluentis.test',
   name: 'Bima',
   role: Role.INSTRUCTOR,
+  locale: 'ID',
 };
 
 describe('CoursesService roster', () => {

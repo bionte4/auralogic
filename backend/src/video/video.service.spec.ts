@@ -14,6 +14,7 @@ const student: AuthenticatedUser = {
   email: 'alya@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 const instructor: AuthenticatedUser = {
@@ -21,6 +22,7 @@ const instructor: AuthenticatedUser = {
   email: 'bima@fluentis.test',
   name: 'Bima',
   role: Role.INSTRUCTOR,
+  locale: 'ID',
 };
 
 describe('VideoService', () => {

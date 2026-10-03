@@ -12,6 +12,7 @@ const student: AuthenticatedUser = {
   email: 'student@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 function contextFor(user: AuthenticatedUser | undefined, lessonId: string | undefined): ExecutionContext {

@@ -6,21 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
+import { PROJECT_KINDS } from '@/lib/course-draft';
 
 interface PhaseProjectView {
   project: {
     title: string;
     prompt: string;
-    kind: 'WRITING' | 'SPEAKING';
+    kind: 'LAB_REPORT' | 'ANALYSIS' | 'DESIGN' | 'NOTEBOOK';
     rubric: string;
   } | null;
 }
 
 export function PhaseProjectForm({ courseId }: { courseId: string }) {
+  const { m } = useI18n();
   const [title, setTitle] = useState('');
   const [prompt, setPrompt] = useState('');
-  const [kind, setKind] = useState<'WRITING' | 'SPEAKING'>('WRITING');
+  const [kind, setKind] = useState<(typeof PROJECT_KINDS)[number]>('LAB_REPORT');
   const [rubric, setRubric] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -37,7 +40,7 @@ export function PhaseProjectForm({ courseId }: { courseId: string }) {
         setRubric(view.project.rubric);
       })
       .catch((caught: unknown) => {
-        setError(caught instanceof ApiError ? caught.message : 'Could not load the phase project.');
+        setError(caught instanceof ApiError ? caught.message : m.project.loadError);
       });
   }, [courseId]);
 
@@ -56,7 +59,7 @@ export function PhaseProjectForm({ courseId }: { courseId: string }) {
         }),
       });
     } catch (caught: unknown) {
-      setError(caught instanceof ApiError ? caught.message : 'Could not save the phase project.');
+      setError(caught instanceof ApiError ? caught.message : m.project.saveError);
     } finally {
       setPending(false);
     }
@@ -65,39 +68,40 @@ export function PhaseProjectForm({ courseId }: { courseId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Phase project</CardTitle>
+        <CardTitle>{m.project.title}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="flex flex-col gap-3" onSubmit={(event) => void save(event)}>
-          <p className="text-sm text-muted-foreground">
-            Students submit this after every lesson is complete. Speaking answers are a transcript you can score for the report.
-          </p>
+          <p className="text-sm text-muted-foreground">{m.project.lead}</p>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="project-title">Title</Label>
+            <Label htmlFor="project-title">{m.project.name}</Label>
             <Input id="project-title" value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} />
           </div>
           <label className="flex flex-col gap-2 text-sm">
-            Kind
+            {m.project.kind}
             <select
               className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
               value={kind}
-              onChange={(event) => setKind(event.target.value === 'SPEAKING' ? 'SPEAKING' : 'WRITING')}
+              onChange={(event) => setKind(event.target.value as (typeof PROJECT_KINDS)[number])}
             >
-              <option value="WRITING">Writing</option>
-              <option value="SPEAKING">Speaking</option>
+              {PROJECT_KINDS.map((item) => (
+                <option key={item} value={item}>
+                  {m.kinds[item]}
+                </option>
+              ))}
             </select>
           </label>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="project-prompt">Prompt</Label>
+            <Label htmlFor="project-prompt">{m.project.prompt}</Label>
             <Textarea id="project-prompt" value={prompt} maxLength={4000} onChange={(event) => setPrompt(event.target.value)} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="project-rubric">Rubric</Label>
+            <Label htmlFor="project-rubric">{m.project.rubric}</Label>
             <Textarea id="project-rubric" value={rubric} maxLength={2000} onChange={(event) => setRubric(event.target.value)} />
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={pending}>
-            {pending ? 'Saving…' : 'Save project'}
+            {pending ? m.project.saving : m.project.save}
           </Button>
         </form>
       </CardContent>

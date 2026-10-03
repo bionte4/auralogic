@@ -8,6 +8,7 @@ import { PhaseProjectForm } from '@/components/instructor/phase-project-form';
 import { PlacementEditor } from '@/components/instructor/placement-editor';
 import { LessonMaterials } from '@/components/instructor/lesson-materials';
 import { LessonUploader } from '@/components/instructor/lesson-uploader';
+import { useI18n } from '@/components/locale-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ type StudioTab = 'outline' | 'video' | 'students';
 
 export function CourseStudio({ courseId }: { courseId: string }) {
   const router = useRouter();
+  const { m } = useI18n();
   const searchParams = useSearchParams();
   const setup = searchParams.get('setup') === '1';
   const [tab, setTab] = useState<StudioTab>('outline');
@@ -75,8 +77,7 @@ export function CourseStudio({ courseId }: { courseId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            {course.level}
-            {course.phase ? ` · Fase ${course.phase}` : ''} · {formatIdr(course.price)}
+            {m.bands[course.level]} · {m.tracks[course.track]} · {m.languages[course.contentLocale]} · {formatIdr(course.price)}
           </p>
           <h1 className="mt-1 text-3xl font-semibold">{course.title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{course.description}</p>

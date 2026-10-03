@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -11,6 +11,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateLocaleDto } from './dto/update-locale.dto';
 
 const RESET_REQUEST_MESSAGE = 'If an account exists for that email, a reset link is on its way.';
 
@@ -64,7 +65,12 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser): AuthUser {
-    return { id: user.id, email: user.email, name: user.name, role: user.role };
+    return { id: user.id, email: user.email, name: user.name, role: user.role, locale: user.locale };
+  }
+
+  @Patch('locale')
+  updateLocale(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateLocaleDto): Promise<AuthUser> {
+    return this.authService.updateLocale(user.id, dto.locale);
   }
 
   @Public()

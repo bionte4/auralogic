@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { BrandMark } from '@/components/brand-mark';
+import { BrandLockup } from '@/components/brand-mark';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/components/locale-provider';
 import { apiRequest } from '@/lib/api';
 import { clearSession, readSession, saveSession, type AuthUser, type Session } from '@/lib/session';
 
@@ -13,6 +15,7 @@ export function LearnShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
+  const { m } = useI18n();
 
   useEffect(() => {
     const cached = readSession();
@@ -34,7 +37,7 @@ export function LearnShell({ children }: { children: ReactNode }) {
   }, [pathname, router]);
 
   if (!session) {
-    return <p className="px-6 py-10 text-sm text-muted-foreground">Checking your session…</p>;
+    return <p className="px-6 py-10 text-sm text-muted-foreground">{m.nav.checking}</p>;
   }
 
   return (
@@ -42,15 +45,15 @@ export function LearnShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-6">
           <Link href="/learn" className="flex min-w-0 items-center gap-3">
-            <BrandMark className="h-9 w-9 shrink-0" />
-            <span className="truncate text-sm font-semibold tracking-tight">Fluentis</span>
+            <BrandLockup className="min-w-0 truncate text-sm" />
             <span className="hidden h-4 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
             <span className="truncate text-sm text-muted-foreground">{session.email}</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
+            <LanguageSwitcher />
             <Button variant="ghost" size="sm" className="min-h-11" asChild>
-              <Link href="/learn">My courses</Link>
+              <Link href="/learn">{m.nav.myCourses}</Link>
             </Button>
             <Button
               variant="outline"
@@ -63,7 +66,7 @@ export function LearnShell({ children }: { children: ReactNode }) {
                 });
               }}
             >
-              Sign out
+              {m.nav.signOut}
             </Button>
           </nav>
         </div>

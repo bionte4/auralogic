@@ -24,7 +24,7 @@ describe('AttachmentsService', () => {
     progress as unknown as ProgressService,
     store,
   );
-  const instructor: AuthenticatedUser = { id: 'instructor-1', email: 'instructor@fluentis.test', name: 'Instructor', role: Role.INSTRUCTOR };
+  const instructor: AuthenticatedUser = { id: 'instructor-1', email: 'instructor@fluentis.test', name: 'Instructor', role: Role.INSTRUCTOR, locale: 'ID' };
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -74,7 +74,7 @@ export function LessonUploader({
         <p className="text-sm font-medium">
           Lesson {orderIndex} · {lessonTitle}
         </p>
-        <p className="text-xs text-muted-foreground">Drop the source file. Fluentis stores encrypted HLS, not the raw file.</p>
+        <p className="text-xs text-muted-foreground">Drop the source file. Auralogic stores encrypted HLS, not the raw file.</p>
       </div>
       <label
         className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed px-4 py-8 text-sm ${over ? 'border-foreground bg-secondary' : 'border-border'}`}

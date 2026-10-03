@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ApiError, apiRequest } from '@/lib/api';
-import { CEFR_LEVELS, formatIdr } from '@/lib/course-draft';
+import { useI18n } from '@/components/locale-provider';
+import { SKILL_BANDS, formatIdr } from '@/lib/course-draft';
 import { financeCsv, financeFilterError, financeQuery, type FinanceFilters, type FinanceTransaction } from '@/lib/finance';
 
 interface CourseSales {
@@ -38,6 +39,7 @@ const RevenueChart = dynamic(() => import('@/components/admin/revenue-chart').th
 const EMPTY_FILTERS: FinanceFilters = { from: '', to: '', q: '', level: '' };
 
 export function FinanceDashboard() {
+  const { m } = useI18n();
   const [draft, setDraft] = useState<FinanceFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<FinanceFilters>(EMPTY_FILTERS);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -102,14 +104,14 @@ export function FinanceDashboard() {
         />
         <select
           className="flex h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-          aria-label="Level"
+          aria-label={m.finance.band}
           value={draft.level}
           onChange={(event) => setDraft({ ...draft, level: event.target.value })}
         >
-          <option value="">All levels</option>
-          {CEFR_LEVELS.map((level) => (
+          <option value="">{m.finance.allBands}</option>
+          {SKILL_BANDS.map((level) => (
             <option key={level} value={level}>
-              {level}
+              {m.bands[level]}
             </option>
           ))}
         </select>

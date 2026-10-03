@@ -8,7 +8,7 @@ function payment(overrides: Partial<SettledPayment> & Pick<SettledPayment, 'id' 
     channel: 'QRIS',
     courseId: 'course-1',
     courseTitle: 'Business English',
-    level: 'B1',
+    level: 'FOUNDATION',
     studentName: 'Alya',
     studentEmail: 'alya@fluentis.test',
     ...overrides,
@@ -30,7 +30,7 @@ describe('finance rules', () => {
           status: 'REFUNDED',
           courseId: 'course-2',
           courseTitle: 'Starter',
-          level: 'A2',
+          level: 'PRACTITIONER',
           occurredAt: new Date('2026-09-15T03:00:00.000Z'),
         }),
       ],
@@ -42,7 +42,7 @@ describe('finance rules', () => {
     expect(summary.refundedAmount).toBe('80000');
     expect(summary.paidCount).toBe(1);
     expect(summary.refundCount).toBe(1);
-    expect(summary.byCourse.map((row) => row.level)).toEqual(['B1', 'A2']);
+    expect(summary.byCourse.map((row) => row.level)).toEqual(['FOUNDATION', 'PRACTITIONER']);
     expect(summary.monthly).toEqual([
       { month: '2026-09', grossRevenue: '80000', netRevenue: '0' },
       { month: '2026-10', grossRevenue: '150000', netRevenue: '150000' },

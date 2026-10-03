@@ -1,4 +1,4 @@
-import type { Role } from '@prisma/client';
+import type { Role, UiLocale } from '@prisma/client';
 import type { Request } from 'express';
 
 export interface AuthenticatedUser {
@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   email: string;
   name: string;
   role: Role;
+  locale: UiLocale;
 }
 
 export interface AuthenticatedRequest extends Request {

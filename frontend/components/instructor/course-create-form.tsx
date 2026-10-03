@@ -7,15 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { CEFR_LEVELS, validateCourseDraft, type CourseDraft } from '@/lib/course-draft';
+import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, validateCourseDraft, type CourseDraft } from '@/lib/course-draft';
 import type { CourseSummary } from '@/lib/courses';
 import { readSession } from '@/lib/session';
 
-const emptyDraft: CourseDraft = { title: '', description: '', level: '', price: '' };
+const emptyDraft: CourseDraft = { title: '', description: '', level: '', track: '', contentLocale: 'ID', price: '' };
 
 export function CourseCreateForm() {
   const router = useRouter();
+  const { m } = useI18n();
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -24,7 +26,7 @@ export function CourseCreateForm() {
     event.preventDefault();
     const validation = validateCourseDraft(draft);
     if (validation) {
-      setError(validation);
+      setError(m.draft[validation === 'price-range' ? 'priceRange' : validation]);
       return;
     }
     const session = readSession();
@@ -42,12 +44,14 @@ export function CourseCreateForm() {
           title: draft.title.trim(),
           description: draft.description.trim(),
           level: draft.level,
+          track: draft.track,
+          contentLocale: draft.contentLocale,
           price: Number(draft.price),
         }),
       });
       router.push(`/instructor/courses/${course.id}?setup=1`);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'Could not create the course.');
+      setError(caught instanceof ApiError ? caught.message : m.studio.createError);
     } finally {
       setPending(false);
     }
@@ -56,12 +60,12 @@ export function CourseCreateForm() {
   return (
     <Card>
       <CardHeader>
-        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Step 1 of 3</p>
-        <CardTitle>Course details</CardTitle>
+        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{m.studio.step}</p>
+        <CardTitle>{m.studio.details}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-          <Field label="Title" htmlFor="course-title">
+          <Field label={m.studio.title} htmlFor="course-title">
             <Input
               id="course-title"
               value={draft.title}
@@ -70,7 +74,7 @@ export function CourseCreateForm() {
               required
             />
           </Field>
-          <Field label="Description" htmlFor="course-description">
+          <Field label={m.studio.description} htmlFor="course-description">
             <Textarea
               id="course-description"
               value={draft.description}
@@ -80,7 +84,40 @@ export function CourseCreateForm() {
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="CEFR level" htmlFor="course-level">
+            <Field label={m.studio.track} htmlFor="course-track">
+              <select
+                id="course-track"
+                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                value={draft.track}
+                onChange={(event) => setDraft({ ...draft, track: event.target.value as CourseDraft['track'] })}
+                required
+              >
+                <option value="">{m.studio.selectTrack}</option>
+                {TRACKS.map((track) => (
+                  <option key={track} value={track}>
+                    {m.tracks[track]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label={m.studio.materialLanguage} htmlFor="course-locale">
+              <select
+                id="course-locale"
+                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                value={draft.contentLocale}
+                onChange={(event) => setDraft({ ...draft, contentLocale: event.target.value as CourseDraft['contentLocale'] })}
+                required
+              >
+                {CONTENT_LOCALES.map((locale) => (
+                  <option key={locale} value={locale}>
+                    {m.languages[locale]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={m.studio.band} htmlFor="course-level">
               <select
                 id="course-level"
                 className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
@@ -88,15 +125,15 @@ export function CourseCreateForm() {
                 onChange={(event) => setDraft({ ...draft, level: event.target.value as CourseDraft['level'] })}
                 required
               >
-                <option value="">Select level</option>
-                {CEFR_LEVELS.map((level) => (
+                <option value="">{m.studio.selectBand}</option>
+                {SKILL_BANDS.map((level) => (
                   <option key={level} value={level}>
-                    {level}
+                    {m.bands[level]}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Price (IDR)" htmlFor="course-price">
+            <Field label={m.studio.price} htmlFor="course-price">
               <Input
                 id="course-price"
                 inputMode="numeric"
@@ -108,7 +145,7 @@ export function CourseCreateForm() {
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit" disabled={pending}>
-            {pending ? 'Creating…' : 'Continue to modules'}
+            {pending ? m.studio.creating : m.studio.continueModules}
           </Button>
         </form>
       </CardContent>

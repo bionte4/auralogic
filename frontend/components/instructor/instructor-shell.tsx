@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useI18n } from '@/components/locale-provider';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/api';
@@ -12,6 +14,7 @@ export function InstructorShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
+  const { m } = useI18n();
 
   useEffect(() => {
     const cached = readSession();
@@ -33,7 +36,7 @@ export function InstructorShell({ children }: { children: ReactNode }) {
   }, [router, pathname]);
 
   if (!session) {
-    return <p className="px-6 py-10 text-sm text-muted-foreground">Checking your session…</p>;
+    return <p className="px-6 py-10 text-sm text-muted-foreground">{m.nav.checking}</p>;
   }
 
   return (
@@ -41,11 +44,12 @@ export function InstructorShell({ children }: { children: ReactNode }) {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Fluentis</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Auralogic</p>
             <p className="text-sm font-medium">{session.email}</p>
           </div>
           <nav className="flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
+            <LanguageSwitcher />
             <Button variant="ghost" size="sm" asChild>
               <Link href="/instructor">Courses</Link>
             </Button>
@@ -77,7 +81,7 @@ export function InstructorShell({ children }: { children: ReactNode }) {
                 });
               }}
             >
-              Sign out
+              {m.nav.signOut}
             </Button>
           </nav>
         </div>

@@ -2,8 +2,8 @@ import { financeCsv, financeFilterError, financeQuery } from './finance';
 
 describe('finance dashboard helpers', () => {
   it('builds a filtered query and rejects a one-sided date range', () => {
-    expect(financeQuery({ from: '2026-10-01', to: '2026-10-31', q: ' Alya ', level: 'B1' })).toBe(
-      '?from=2026-10-01&to=2026-10-31&q=Alya&level=B1',
+    expect(financeQuery({ from: '2026-10-01', to: '2026-10-31', q: ' Alya ', level: 'FOUNDATION' })).toBe(
+      '?from=2026-10-01&to=2026-10-31&q=Alya&level=FOUNDATION',
     );
     expect(financeFilterError({ from: '2026-10-02', to: '', q: '', level: '' })).toBe(
       'Choose both a start date and an end date.',
@@ -22,7 +22,7 @@ describe('finance dashboard helpers', () => {
         channel: 'QRIS',
         courseId: 'course-1',
         courseTitle: 'Business "English"',
-        level: 'B1',
+        level: 'FOUNDATION',
         studentName: 'Alya',
         studentEmail: 'alya@fluentis.test',
       },

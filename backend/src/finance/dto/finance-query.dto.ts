@@ -1,4 +1,4 @@
-import { CefrLevel } from '@prisma/client';
+import { SkillBand } from '@prisma/client';
 import { IsEnum, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class FinanceQueryDto {
@@ -16,6 +16,6 @@ export class FinanceQueryDto {
   q?: string;
 
   @IsOptional()
-  @IsEnum(CefrLevel)
-  level?: CefrLevel;
+  @IsEnum(SkillBand)
+  level?: SkillBand;
 }

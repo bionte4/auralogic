@@ -1,268 +1,402 @@
+const { createHash } = require('node:crypto');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+const RETIRED_SLUGS = [
+  'workplace-english',
+  'english-for-travel',
+  'everyday-english',
+  'school-projects',
+  'english-for-presentations',
+  'campus-english',
+];
+
 const courses = [
-  {
-    slug: 'workplace-english',
-    title: 'Workplace English',
-    description: 'Greet colleagues, write short messages, and handle a weekly meeting in clear English.',
-    level: 'B1',
+  course({
+    slug: 'network-foundation',
+    title: 'Fondasi Jaringan',
+    description: 'Baca model jaringan, hitung subnet, dan bedakan switching dari routing.',
+    level: 'FOUNDATION',
+    track: 'NETWORK',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menjelaskan jalur sebuah paket dari host ke host lain.',
     price: '350000.00',
     status: 'PUBLISHED',
     enrollment: 'PAID',
-    modules: [
-      {
-        title: 'First conversations',
-        description: 'Open a workday with a polite greeting.',
-        lessons: [
-          {
-            type: 'VIDEO',
-            title: 'Greeting a colleague',
-            description: 'Watch a short office greeting and notice the polite phrases.',
-            durationSeconds: 420,
-          },
-          {
-            type: 'READING',
-            title: 'Polite openers',
-            description: 'Good morning. How was your weekend? Could I ask a quick question? These openers keep a request friendly.',
-          },
-          {
-            type: 'QUIZ',
-            title: 'Greeting check',
-            description: 'Choose the more polite option. You need 80 to pass.',
-            passingScore: 80,
-            questions: [
-              {
-                prompt: 'Which greeting fits a Monday morning at the office?',
-                choices: [
-                  { text: 'Hey, move.', correct: false },
-                  { text: 'Good morning. How was your weekend?', correct: true },
-                ],
-              },
-              {
-                prompt: 'Which request is polite?',
-                choices: [
-                  { text: 'Could you send the report by noon?', correct: true },
-                  { text: 'Send it now.', correct: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Weekly meetings',
-        description: 'This level opens after every lesson in level 1 is complete.',
-        lessons: [
-          {
-            type: 'VIDEO',
-            title: 'Starting a meeting',
-            description: 'Learn how to open a meeting and invite the first update.',
-            durationSeconds: 540,
-          },
-          {
-            type: 'QUIZ',
-            title: 'Meeting check',
-            description: 'Pass with 80 to finish this level.',
-            passingScore: 80,
-            questions: [
-              {
-                prompt: 'How do you invite someone to speak?',
-                choices: [
-                  { text: 'Would you like to start with your update?', correct: true },
-                  { text: 'You. Talk.', correct: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'english-for-travel',
-    title: 'English for Travel',
-    description: 'Ask for directions, book a room, and order food while traveling.',
-    level: 'A2',
-    price: '250000.00',
+    accent: '#0284C7',
+    moduleTitle: 'Model dan alamat',
+    moduleDescription: 'OSI, TCP/IP, dan pengalamatan.',
+    moduleOutcome: 'Menyebut lapisan yang bertanggung jawab atas alamat dan pengiriman.',
+    videoTitle: 'Dari OSI ke TCP/IP',
+    videoDescription: 'Empat lapisan TCP/IP dan apa yang masing-masing serahkan ke lapisan di bawahnya.',
+    durationSeconds: 480,
+    quizTitle: 'Cek subnet',
+    prompt: 'Apa peran alamat jaringan pada sebuah subnet?',
+    correct: 'Menamai subnet, bukan sebuah host.',
+    wrong: 'Dipakai host untuk menjelajah web.',
+  }),
+  course({
+    slug: 'network-routing',
+    title: 'Routing dan Subnet',
+    description: 'Pilih rute, baca tabel routing, dan hitung ulang sebuah subnet yang sudah terpakai.',
+    level: 'PRACTITIONER',
+    track: 'NETWORK',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menjelaskan mengapa sebuah paket memilih satu next hop.',
+    price: '490000.00',
     status: 'PUBLISHED',
-    enrollment: 'UNPAID',
-    modules: [
-      {
-        title: 'At the hotel',
-        description: 'Check in and ask about breakfast.',
-        outcome: 'Ask for breakfast time and a quiet room.',
-        lessons: [
-          {
-            type: 'READING',
-            title: 'Check-in phrases',
-            description: 'I have a reservation under Ayu. What time is breakfast? Could I have a quiet room?',
-          },
-          {
-            type: 'QUIZ',
-            title: 'Hotel check',
-            description: 'Pass with 80.',
-            passingScore: 80,
-            questions: [
-              {
-                prompt: 'How do you ask for breakfast time?',
-                choices: [
-                  { text: 'What time is breakfast?', correct: true },
-                  { text: 'Food when?', correct: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'everyday-english',
-    title: 'Everyday English',
-    description: 'Greet people, name classroom objects, and ask simple questions.',
-    level: 'A1',
-    phase: 'A',
-    outcome: 'Students can greet someone and ask a simple classroom question.',
-    price: '120000.00',
+    accent: '#0369A1',
+    moduleTitle: 'Tabel routing',
+    moduleDescription: 'Prefix, metrik, dan next hop.',
+    moduleOutcome: 'Membaca satu baris tabel routing dan menyebut next hop-nya.',
+    videoTitle: 'Memilih next hop',
+    videoDescription: 'Router membandingkan prefix terpanjang, lalu memakai metrik saat prefix sama panjang.',
+    durationSeconds: 640,
+    quizTitle: 'Cek rute',
+    prompt: 'Apa yang dipilih router saat dua rute sama panjang?',
+    correct: 'Metrik yang lebih baik.',
+    wrong: 'Alamat MAC pengirim.',
+  }),
+  course({
+    slug: 'network-topology-draft',
+    title: 'Draf: Topologi kecil',
+    description: 'Sketsa satu LAN dengan switch, router, dan rentang alamat yang tidak bertumpuk.',
+    level: 'FOUNDATION',
+    track: 'NETWORK',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menggambar tiga subnet yang tidak saling menimpa.',
+    price: '290000.00',
+    status: 'DRAFT',
+    accent: '#7DD3FC',
+    moduleTitle: 'Sketsa LAN',
+    moduleDescription: 'Peran switch dan router pada gambar.',
+    moduleOutcome: 'Menandai perangkat yang meneruskan paket antar subnet.',
+    videoTitle: 'Switch atau router',
+    videoDescription: 'Switch menghubungkan host dalam satu subnet. Router menghubungkan subnet yang berbeda.',
+    durationSeconds: 360,
+    quizTitle: 'Cek peran',
+    prompt: 'Perangkat mana yang menghubungkan dua subnet?',
+    correct: 'Router.',
+    wrong: 'Kabel lurus antar dua host.',
+  }),
+  course({
+    slug: 'cybersecurity-foundation',
+    title: 'Fondasi Keamanan',
+    description: 'Bedakan ancaman dan kerentanan, lalu susun baseline konfigurasi yang aman.',
+    level: 'FOUNDATION',
+    track: 'CYBERSECURITY',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menulis rekomendasi hardening tanpa langkah menyerang.',
+    price: '380000.00',
     status: 'PUBLISHED',
-    enrollment: 'NONE',
-    modules: [
-      {
-        title: 'Hello',
-        description: 'The first words of a school day.',
-        outcome: 'Greet a classmate and say your name.',
-        lessons: [
-          {
-            type: 'VIDEO',
-            title: 'Hello and goodbye',
-            description: 'Hello. My name is Sari. Goodbye. See you tomorrow.',
-            durationSeconds: 360,
-          },
-          {
-            type: 'QUIZ',
-            title: 'Greeting check',
-            description: 'Pass with 80.',
-            passingScore: 80,
-            questions: [
-              {
-                prompt: 'How do you say your name?',
-                choices: [
-                  { text: 'My name is Sari.', correct: true },
-                  { text: 'Name food.', correct: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'school-projects',
-    title: 'English for School Projects',
-    description: 'Describe a class project and ask a classmate for help.',
-    level: 'A2',
-    phase: 'C',
-    outcome: 'Students can explain a school project in a few clear sentences.',
-    price: '180000.00',
+    accent: '#059669',
+    moduleTitle: 'Risiko dan kontrol',
+    moduleDescription: 'CIA, identitas, dan baseline.',
+    moduleOutcome: 'Menilai satu kontrol untuk satu risiko.',
+    videoTitle: 'Ancaman, kerentanan, kontrol',
+    videoDescription: 'Kerentanan adalah kelemahan. Ancaman adalah pihak atau kejadian yang dapat memakainya. Kontrol mengurangi peluang itu.',
+    durationSeconds: 520,
+    quizTitle: 'Cek konsep',
+    prompt: 'Mana yang merupakan kontrol, bukan langkah serangan?',
+    correct: 'Mematikan layanan yang tidak diperlukan.',
+    wrong: 'Mencoba masuk ke akun orang lain.',
+  }),
+  course({
+    slug: 'cybersecurity-baseline',
+    title: 'Baseline dan Log',
+    description: 'Bandingkan konfigurasi dengan baseline, lalu baca log untuk menemukan penyimpangan.',
+    level: 'PRACTITIONER',
+    track: 'CYBERSECURITY',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menandai satu baris log yang tidak sesuai baseline.',
+    price: '540000.00',
     status: 'PUBLISHED',
-    enrollment: 'NONE',
-    modules: [
-      {
-        title: 'Describe the project',
-        description: 'Say what the project is and who it is for.',
-        outcome: 'Describe the goal of a class project.',
-        lessons: [
-          {
-            type: 'VIDEO',
-            title: 'Our class garden',
-            description: 'Our project is a class garden. We grow tomatoes for the canteen.',
-            durationSeconds: 480,
-          },
-          {
-            type: 'READING',
-            title: 'Asking for help',
-            description: 'Could you help me label the plants? I do not know this word yet.',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'english-for-presentations',
-    title: 'English for Presentations',
-    description: 'Open a short talk, show one slide, and answer a question from the room.',
-    level: 'B2',
-    phase: 'E',
-    outcome: 'Students can open a presentation and answer one follow-up question.',
+    accent: '#047857',
+    moduleTitle: 'Membaca penyimpangan',
+    moduleDescription: 'Baseline, log, dan rekomendasi.',
+    moduleOutcome: 'Mengusulkan satu perubahan konfigurasi dari sebuah temuan log.',
+    videoTitle: 'Dari baseline ke log',
+    videoDescription: 'Baseline mencatat layanan yang boleh hidup. Log menunjukkan apa yang benar-benar terjadi.',
+    durationSeconds: 700,
+    quizTitle: 'Cek log',
+    prompt: 'Apa langkah yang tepat setelah sebuah layanan di luar baseline muncul di log?',
+    correct: 'Catat temuannya dan rekomendasikan layanan itu dimatikan atau dibenarkan.',
+    wrong: 'Uji layanan itu dengan mencoba mengeksploitasinya.',
+  }),
+  course({
+    slug: 'cybersecurity-access-draft',
+    title: 'Draf: Kontrol akses',
+    description: 'Susun siapa yang boleh membaca, mengubah, dan menyetujui sebuah sistem.',
+    level: 'FOUNDATION',
+    track: 'CYBERSECURITY',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat memisahkan peran pemohon dan penyetuju.',
+    price: '300000.00',
+    status: 'DRAFT',
+    accent: '#6EE7B7',
+    moduleTitle: 'Peran dan izin',
+    moduleDescription: 'Least privilege dan pemisahan tugas.',
+    moduleOutcome: 'Menulis tiga peran dengan izin yang berbeda.',
+    videoTitle: 'Izin secukupnya',
+    videoDescription: 'Setiap peran hanya menerima izin yang dibutuhkan pekerjaannya.',
+    durationSeconds: 400,
+    quizTitle: 'Cek peran',
+    prompt: 'Mengapa pemohon dan penyetuju sebaiknya orang yang berbeda?',
+    correct: 'Agar satu orang tidak dapat menyetujui permintaannya sendiri.',
+    wrong: 'Agar kata sandi dapat dibagikan dalam tim.',
+  }),
+  course({
+    slug: 'data-foundation',
+    title: 'Fondasi Data',
+    description: 'Ajukan pertanyaan dengan SQL, bersihkan data, dan baca sebuah ringkasan.',
+    level: 'FOUNDATION',
+    track: 'DATA_SCIENCE',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menulis kueri yang menjawab satu pertanyaan bisnis.',
+    price: '320000.00',
+    status: 'PUBLISHED',
+    accent: '#D97706',
+    moduleTitle: 'Bertanya ke tabel',
+    moduleDescription: 'SELECT, filter, dan agregasi.',
+    moduleOutcome: 'Menghitung satu metrik dari sebuah tabel.',
+    videoTitle: 'Satu pertanyaan, satu kueri',
+    videoDescription: 'SELECT region, COUNT(*) FROM orders WHERE paid = true GROUP BY region menjawab berapa pesanan lunas di tiap wilayah.',
+    durationSeconds: 560,
+    quizTitle: 'Cek SQL',
+    prompt: 'Klausul mana yang menyaring baris sebelum agregasi?',
+    correct: 'WHERE',
+    wrong: 'ORDER BY',
+  }),
+  course({
+    slug: 'data-metrics',
+    title: 'Metrik yang bisa dijelaskan',
+    description: 'Pilih pembilang dan penyebut, lalu tulis definisi metrik yang dapat diulang orang lain.',
+    level: 'PRACTITIONER',
+    track: 'DATA_SCIENCE',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat mempertahankan satu metrik beserta filternya.',
+    price: '460000.00',
+    status: 'PUBLISHED',
+    accent: '#B45309',
+    moduleTitle: 'Definisi metrik',
+    moduleDescription: 'Pembilang, penyebut, dan jendela waktu.',
+    moduleOutcome: 'Menulis definisi satu rasio beserta filternya.',
+    videoTitle: 'Rasio yang jujur',
+    videoDescription: 'Sebuah rasio tanpa jendela waktu dan filter dapat membandingkan hal yang berbeda.',
+    durationSeconds: 610,
+    quizTitle: 'Cek metrik',
+    prompt: 'Apa yang wajib disebut saat mendefinisikan sebuah rasio?',
+    correct: 'Pembilang, penyebut, dan jendela waktunya.',
+    wrong: 'Hanya warna grafik.',
+  }),
+  course({
+    slug: 'data-cleaning-draft',
+    title: 'Draf: Membersihkan data',
+    description: 'Tandai nilai kosong, duplikat, dan satuan yang tidak seragam sebelum menghitung.',
+    level: 'FOUNDATION',
+    track: 'DATA_SCIENCE',
+    contentLocale: 'ID',
+    outcome: 'Peserta dapat menolak sebuah rata-rata yang dihitung dari data kotor.',
+    price: '280000.00',
+    status: 'DRAFT',
+    accent: '#FCD34D',
+    moduleTitle: 'Sebelum agregasi',
+    moduleDescription: 'Kosong, duplikat, dan satuan.',
+    moduleOutcome: 'Menyebut satu alasan sebuah kolom belum siap dihitung.',
+    videoTitle: 'Jangan rata-rata dulu',
+    videoDescription: 'Nilai kosong dan satuan yang bercampur mengubah hasil agregasi.',
+    durationSeconds: 340,
+    quizTitle: 'Cek kebersihan',
+    prompt: 'Kapan sebuah rata-rata layak dilaporkan?',
+    correct: 'Setelah nilai kosong dan satuan yang bercampur ditangani.',
+    wrong: 'Begitu file berhasil dibuka.',
+  }),
+  course({
+    slug: 'ai-foundation',
+    title: 'AI Foundations',
+    description: 'Tell supervised learning from unsupervised learning and name one limit of a model.',
+    level: 'FOUNDATION',
+    track: 'AI',
+    contentLocale: 'EN',
+    outcome: 'A learner can say what a model was trained to predict and where it should not decide alone.',
     price: '420000.00',
     status: 'PUBLISHED',
-    enrollment: 'NONE',
-    modules: [
-      {
-        title: 'Open the talk',
-        description: 'The first minute of a presentation.',
-        outcome: 'Open a talk and state the topic.',
-        lessons: [
-          {
-            type: 'VIDEO',
-            title: 'The first minute',
-            description: 'Good morning. Today I will explain how our team cut waiting time.',
-            durationSeconds: 600,
-          },
-          {
-            type: 'QUIZ',
-            title: 'Opening check',
-            description: 'Pass with 80.',
-            passingScore: 80,
-            questions: [
-              {
-                prompt: 'Which line opens a talk?',
-                choices: [
-                  { text: 'Today I will explain our result.', correct: true },
-                  { text: 'Whatever. Start.', correct: false },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    slug: 'campus-english',
-    title: 'English for Campus Life',
-    description: 'Discuss a campus plan and write a short opinion for a seminar.',
-    level: 'C1',
-    phase: 'F',
-    outcome: 'Students can give a reasoned opinion about a campus decision.',
-    price: '520000.00',
+    accent: '#7C3AED',
+    moduleTitle: 'What a model learns',
+    moduleDescription: 'Labels, features, and evaluation.',
+    moduleOutcome: 'Name the question a model answers.',
+    videoTitle: 'A labeled example',
+    videoDescription: 'Supervised learning maps inputs to a label that a person already recorded.',
+    durationSeconds: 540,
+    quizTitle: 'Model check',
+    prompt: 'Which task is supervised?',
+    correct: 'Predict a known label from examples.',
+    wrong: 'Group rows when no label exists.',
+  }),
+  course({
+    slug: 'ai-evaluation',
+    title: 'Evaluating a Model',
+    description: 'Separate training data from a held-out check, and refuse a score that has no baseline.',
+    level: 'PRACTITIONER',
+    track: 'AI',
+    contentLocale: 'EN',
+    outcome: 'A learner can explain why a single accuracy number is not a decision.',
+    price: '580000.00',
     status: 'PUBLISHED',
-    enrollment: 'NONE',
-    modules: [
-      {
-        title: 'A campus opinion',
-        description: 'State a view and one reason.',
-        outcome: 'State an opinion and support it with one reason.',
-        lessons: [
+    accent: '#6D28D9',
+    moduleTitle: 'A fair check',
+    moduleDescription: 'Holdout data, baseline, and human review.',
+    moduleOutcome: 'Compare a model with a simple baseline before trusting it.',
+    videoTitle: 'Accuracy is not enough',
+    videoDescription: 'A high score on the training rows does not show how the model behaves on new rows.',
+    durationSeconds: 720,
+    quizTitle: 'Evaluation check',
+    prompt: 'Which set should be used to judge a model the team did not tune on?',
+    correct: 'Rows held out from training.',
+    wrong: 'The same rows the model memorized.',
+  }),
+  course({
+    slug: 'ai-limits-draft',
+    title: 'Draft: Where a model stops',
+    description: 'List decisions that stay with a person even when a model suggests an answer.',
+    level: 'FOUNDATION',
+    track: 'AI',
+    contentLocale: 'EN',
+    outcome: 'A learner can name one decision the model must not make alone.',
+    price: '310000.00',
+    status: 'DRAFT',
+    accent: '#C4B5FD',
+    moduleTitle: 'Human review',
+    moduleDescription: 'Suggestions versus decisions.',
+    moduleOutcome: 'Write one case that needs a person to confirm the result.',
+    videoTitle: 'A suggestion, not a verdict',
+    videoDescription: 'The model can rank options. A person remains responsible for the decision.',
+    durationSeconds: 380,
+    quizTitle: 'Limit check',
+    prompt: 'What should happen when a model is unsure?',
+    correct: 'Show the case to a person.',
+    wrong: 'Hide the uncertainty and proceed.',
+  }),
+];
+
+function course(input) {
+  return input;
+}
+
+function sampleAssetId(slug) {
+  return createHash('sha256').update(`auralogic-sample:${slug}`).digest('hex').slice(0, 32);
+}
+
+function coverSvg(accent, variant) {
+  const drift = (variant % 4) * 70;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" fill="#0B1220"/>
+  <circle cx="${980 + drift}" cy="${120 + drift}" r="250" fill="${accent}" opacity="0.9"/>
+  <circle cx="${160 + drift}" cy="640" r="210" fill="${accent}" opacity="0.28"/>
+  <circle cx="640" cy="360" r="${90 + drift}" fill="${accent}" opacity="0.18"/>
+</svg>`;
+}
+
+async function ensureVideo(courseId, slug, lesson) {
+  const modules = await prisma.module.findMany({
+    where: { courseId },
+    orderBy: { orderIndex: 'asc' },
+    include: { lessons: { include: { videoAsset: true } } },
+  });
+  const hasVideo = modules.some((module) => module.lessons.some((item) => item.videoAsset));
+  if (hasVideo || modules.length === 0) {
+    return;
+  }
+  const module = modules[0];
+  const orderIndex = module.lessons.reduce((max, item) => Math.max(max, item.orderIndex), 0) + 1;
+  await prisma.lesson.create({
+    data: {
+      moduleId: module.id,
+      title: lesson.videoTitle,
+      description: lesson.videoDescription,
+      type: 'VIDEO',
+      orderIndex,
+      videoAsset: {
+        create: {
+          provider: 'CLOUDFLARE_STREAM',
+          assetId: sampleAssetId(slug),
+          encryption: 'AES_128',
+          durationSeconds: lesson.durationSeconds,
+        },
+      },
+    },
+  });
+}
+
+async function createCourse(instructorId, item) {
+  return prisma.course.create({
+    data: {
+      instructorId,
+      title: item.title,
+      slug: item.slug,
+      description: item.description,
+      level: item.level,
+      track: item.track,
+      contentLocale: item.contentLocale,
+      price: item.price,
+      outcome: item.outcome,
+      coverImageUrl: `/covers/${item.slug}.svg`,
+      status: item.status,
+      publishedAt: item.status === 'PUBLISHED' ? new Date() : null,
+      modules: {
+        create: [
           {
-            type: 'READING',
-            title: 'A short opinion',
-            description: 'I support the later library hours because students who work need a quiet place after class.',
-          },
-          {
-            type: 'VIDEO',
-            title: 'Seminar turn',
-            description: 'I would like to add one reason. The evidence from last semester supports this change.',
-            durationSeconds: 720,
+            title: item.moduleTitle,
+            description: item.moduleDescription,
+            outcome: item.moduleOutcome,
+            orderIndex: 1,
+            lessons: {
+              create: [
+                {
+                  title: item.videoTitle,
+                  description: item.videoDescription,
+                  type: 'VIDEO',
+                  orderIndex: 1,
+                  videoAsset: {
+                    create: {
+                      provider: 'CLOUDFLARE_STREAM',
+                      assetId: sampleAssetId(item.slug),
+                      encryption: 'AES_128',
+                      durationSeconds: item.durationSeconds,
+                    },
+                  },
+                },
+                {
+                  title: item.quizTitle,
+                  description: 'Nilai lulus 80.',
+                  type: 'QUIZ',
+                  orderIndex: 2,
+                  passingScore: 80,
+                  quizQuestions: {
+                    create: [
+                      {
+                        prompt: item.prompt,
+                        orderIndex: 1,
+                        choices: {
+                          create: [
+                            { text: item.correct, correct: true, orderIndex: 1 },
+                            { text: item.wrong, correct: false, orderIndex: 2 },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
           },
         ],
       },
-    ],
-  },
-];
+    },
+  });
+}
 
 async function main() {
   const instructor = await prisma.user.findUnique({ where: { email: 'instructor@fluentis.test' } });
@@ -270,108 +404,70 @@ async function main() {
   if (!instructor || !student) {
     throw new Error('Seed the local users before the courses.');
   }
+  await prisma.user.update({ where: { id: instructor.id }, data: { name: 'Auralogic Studio' } });
 
-  for (const course of courses) {
-    const existing = await prisma.course.findUnique({ where: { slug: course.slug }, select: { id: true } });
+  const { writeFileSync, mkdirSync } = require('node:fs');
+  const { join } = require('node:path');
+  const coverDir = join(__dirname, '../../frontend/public/covers');
+  mkdirSync(coverDir, { recursive: true });
+
+  await prisma.course.updateMany({ where: { slug: { in: RETIRED_SLUGS } }, data: { status: 'ARCHIVED' } });
+
+  for (const item of courses) {
+    writeFileSync(join(coverDir, `${item.slug}.svg`), coverSvg(item.accent, item.slug.length));
+    const existing = await prisma.course.findUnique({ where: { slug: item.slug }, select: { id: true, publishedAt: true } });
     if (existing) {
-      console.log(`${course.slug} kept ${existing.id}`);
-      continue;
-    }
-
-    const created = await prisma.course.create({
-      data: {
-        instructorId: instructor.id,
-        title: course.title,
-        slug: course.slug,
-        description: course.description,
-        level: course.level,
-        price: course.price,
-        phase: course.phase ?? null,
-        outcome: course.outcome ?? null,
-        status: course.status,
-        publishedAt: new Date(),
-        modules: {
-          create: course.modules.map((module, moduleIndex) => ({
-            title: module.title,
-            description: module.description,
-            outcome: module.outcome ?? null,
-            orderIndex: moduleIndex + 1,
-            lessons: {
-              create: module.lessons.map((lesson, lessonIndex) => ({
-                title: lesson.title,
-                description: lesson.description,
-                type: lesson.type,
-                orderIndex: lessonIndex + 1,
-                passingScore: lesson.passingScore ?? null,
-                ...(lesson.type === 'VIDEO'
-                  ? {
-                      videoAsset: {
-                        create: {
-                          provider: 'CLOUDFLARE_STREAM',
-                          assetId: `seed${course.slug.replace(/-/g, '').slice(0, 12)}${lessonIndex + 1}`.padEnd(32, 'a'),
-                          encryption: 'AES_128',
-                          durationSeconds: lesson.durationSeconds ?? 300,
-                        },
-                      },
-                    }
-                  : {}),
-                ...(lesson.questions
-                  ? {
-                      quizQuestions: {
-                        create: lesson.questions.map((question, questionIndex) => ({
-                          prompt: question.prompt,
-                          orderIndex: questionIndex + 1,
-                          choices: {
-                            create: question.choices.map((choice, choiceIndex) => ({
-                              text: choice.text,
-                              correct: choice.correct,
-                              orderIndex: choiceIndex + 1,
-                            })),
-                          },
-                        })),
-                      },
-                    }
-                  : {}),
-              })),
-            },
-          })),
+      await prisma.course.update({
+        where: { id: existing.id },
+        data: {
+          title: item.title,
+          description: item.description,
+          level: item.level,
+          track: item.track,
+          contentLocale: item.contentLocale,
+          price: item.price,
+          outcome: item.outcome,
+          coverImageUrl: `/covers/${item.slug}.svg`,
+          status: item.status,
+          publishedAt: item.status === 'PUBLISHED' ? (existing.publishedAt ?? new Date()) : null,
         },
-      },
-    });
-
-    if (course.enrollment === 'NONE') {
-      console.log(`${course.slug} ${created.id}`);
+      });
+      await ensureVideo(existing.id, item.slug, item);
+      console.log(`${item.slug} updated ${existing.id}`);
       continue;
     }
 
-    const paid = course.enrollment === 'PAID';
-    const orderId = `seed-${course.slug}`;
-    await prisma.enrollment.create({
-      data: {
-        userId: student.id,
-        courseId: created.id,
-        orderId,
-        status: paid ? 'ACTIVE' : 'PENDING',
-        paymentStatus: paid ? 'PAID' : 'UNPAID',
-        amount: course.price,
-        currency: 'IDR',
-        paidAt: paid ? new Date() : null,
-        payments: paid
-          ? {
+    const created = await createCourse(instructor.id, item);
+    if (item.enrollment === 'PAID') {
+      const orderId = `seed-${item.slug}`;
+      const already = await prisma.enrollment.findUnique({ where: { userId_courseId: { userId: student.id, courseId: created.id } } });
+      if (!already) {
+        await prisma.enrollment.create({
+          data: {
+            userId: student.id,
+            courseId: created.id,
+            orderId,
+            status: 'ACTIVE',
+            paymentStatus: 'PAID',
+            amount: item.price,
+            currency: 'IDR',
+            paidAt: new Date(),
+            payments: {
               create: {
                 orderId: `${orderId}-pay`,
                 provider: 'MIDTRANS',
                 channel: 'QRIS',
-                amount: course.price,
+                amount: item.price,
                 currency: 'IDR',
                 status: 'PAID',
                 paidAt: new Date(),
               },
-            }
-          : undefined,
-      },
-    });
-    console.log(`${course.slug} ${created.id}`);
+            },
+          },
+        });
+      }
+    }
+    console.log(`${item.slug} ${item.status} ${created.id}`);
   }
 }
 

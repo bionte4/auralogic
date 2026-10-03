@@ -33,6 +33,7 @@ describe('AuthService registration', () => {
       email: 'alya@fluentis.test',
       name: data.name,
       role: data.role,
+      locale: 'ID' as const,
       passwordHash: data.passwordHash,
     }));
     jwt.signAsync.mockResolvedValue('signed-token');

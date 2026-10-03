@@ -1,17 +1,27 @@
+export const BRAND_NAME = 'Auralogic';
+
 export function BrandMark({ className = 'h-9 w-9' }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect width="32" height="32" rx="8" className="fill-primary" />
+      <rect width="32" height="32" rx="8" fill="#0F766E" />
       <path
-        className="fill-primary-foreground"
-        d="M8.8 8h13.1a1.45 1.45 0 0 1 0 2.9H12.2v2.35h7.35a1.45 1.45 0 0 1 0 2.9H12.2V24H8.8V8Z"
-      />
-      <path
-        className="fill-none stroke-primary-foreground"
-        d="M17.2 22.2c2.1 1.15 4.15 1.35 6.3.35"
-        strokeWidth="1.7"
+        d="M8.5 23.5 16 8.5l7.5 15"
+        fill="none"
+        stroke="#F0FDFA"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
         strokeLinecap="round"
       />
+      <path d="M11.4 18.4h9.2" stroke="#5EEAD4" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
+  );
+}
+
+export function BrandLockup({ markClassName = 'h-8 w-8', className = '' }: { markClassName?: string; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-2 font-semibold tracking-tight ${className}`}>
+      <BrandMark className={markClassName} />
+      {BRAND_NAME}
+    </span>
   );
 }

@@ -10,6 +10,7 @@ const student: AuthenticatedUser = {
   email: 'alya@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 describe('CheckoutService listEnrollments', () => {
@@ -30,14 +31,14 @@ describe('CheckoutService listEnrollments', () => {
         paymentStatus: PaymentStatus.PAID,
         accessStartsAt: null,
         accessEndsAt: null,
-        course: { title: 'Business English', level: 'B1' },
+        course: { title: 'Network Foundations', level: 'FOUNDATION' },
       },
     ]);
 
     const rows = await service.listEnrollments(student);
 
     expect(rows[0]).toMatchObject({
-      title: 'Business English',
+      title: 'Network Foundations',
       accessGranted: true,
       paymentStatus: PaymentStatus.PAID,
       progressPercent: 0,

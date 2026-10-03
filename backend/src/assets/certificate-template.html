@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
   <head>
     <meta charset="utf-8" />
-    <title>Fluentis certificate {{certificateId}}</title>
+    <title>Auralogic certificate {{certificateId}}</title>
     <style>
       @page {
         size: A4 landscape;
@@ -102,16 +102,16 @@
       <div class="frame">
         <p class="brand">FLUENTIS</p>
         <div>
-          <h1>Certificate of Completion</h1>
-          <p class="lead">This certifies that</p>
+          <h1>{{heading}}</h1>
+          <p class="lead">{{lead}}</p>
           <p class="name">{{studentName}}</p>
-          <p class="bridge">has completed every module of</p>
+          <p class="bridge">{{bridge}}</p>
           <p class="course">{{courseName}}</p>
           <p class="date">{{completionDate}}</p>
         </div>
         <div>
           <img class="qr" src="{{qrCode}}" alt="Verification QR code" />
-          <p class="meta">Certificate ID {{certificateId}}</p>
+          <p class="meta">{{idLabel}} {{certificateId}}</p>
           <p class="meta">{{verifyUrl}}</p>
         </div>
       </div>

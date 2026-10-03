@@ -10,6 +10,7 @@ const student: AuthenticatedUser = {
   email: 'student@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 describe('CheckoutService', () => {

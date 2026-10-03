@@ -10,6 +10,7 @@ const owner: AuthenticatedUser = {
   email: 'alya@fluentis.test',
   name: 'Alya',
   role: Role.STUDENT,
+  locale: 'ID',
 };
 
 const row = {
@@ -57,7 +58,7 @@ describe('CertificatesService', () => {
     const file = await service.open(owner, row.id, 'attachment');
 
     expect(file.getHeaders().type).toBe('application/pdf');
-    expect(file.getHeaders().disposition).toBe(`attachment; filename="fluentis-${row.id}.pdf"`);
+    expect(file.getHeaders().disposition).toBe(`attachment; filename="auralogic-${row.id}.pdf"`);
     expect(engine.render).toHaveBeenCalledTimes(1);
     const html = (engine.render as jest.Mock).mock.calls[0]?.[0];
     expect(html).toContain('Alya');

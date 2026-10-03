@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Role } from '@prisma/client';
+import { Role, UiLocale } from '@prisma/client';
 import { compare, hash } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtPayload } from '../common/types/authenticated-request';
@@ -17,6 +17,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: Role;
+  locale: UiLocale;
 }
 
 export interface LoginResult {
@@ -76,6 +77,7 @@ export class AuthService {
         name,
         passwordHash,
         role: Role.STUDENT,
+        locale: dto.locale ?? UiLocale.ID,
       },
     });
     return this.issueToken(user);
@@ -84,7 +86,7 @@ export class AuthService {
   async requestPasswordReset(dto: ForgotPasswordDto): Promise<void> {
     const user = await this.prisma.user.findFirst({
       where: { email: { equals: dto.email, mode: 'insensitive' }, active: true },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, locale: true },
     });
     if (!user) {
       return;
@@ -100,7 +102,7 @@ export class AuthService {
 
     const origin = readAppEnv().frontendOrigin.replace(/\/$/, '');
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(issued.token)}`;
-    await this.notifications.passwordReset({ email: user.email, name: user.name, resetUrl });
+    await this.notifications.passwordReset({ email: user.email, name: user.name, resetUrl, locale: user.locale });
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
@@ -127,6 +129,15 @@ export class AuthService {
     });
   }
 
+  async updateLocale(userId: string, locale: UiLocale): Promise<AuthUser> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+      select: { id: true, email: true, name: true, role: true, locale: true },
+    });
+    return user;
+  }
+
   private async issueToken(user: AuthUser): Promise<LoginResult> {
     const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = await this.jwt.signAsync(payload);
@@ -134,7 +145,7 @@ export class AuthService {
       accessToken,
       tokenType: 'Bearer',
       expiresInSeconds: TOKEN_TTL_SECONDS,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, locale: user.locale },
     };
   }
 }

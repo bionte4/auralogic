@@ -3,17 +3,19 @@ import { filterCatalog, matchesPriceBand } from './catalog-filters';
 
 const course = {
   id: 'course-1',
-  title: 'Workplace English',
-  slug: 'workplace-english',
-  description: 'Meetings',
-  level: 'B1',
+  title: 'Network Fondasi',
+  slug: 'network-foundation',
+  description: 'Subnetting',
+  level: 'FOUNDATION',
+  track: 'NETWORK',
+  contentLocale: 'ID',
   status: 'PUBLISHED',
   publishedAt: null,
   price: '250000.00',
   coverImageUrl: null,
-  phase: 'D',
   outcome: null,
   instructor: { id: 'instructor-1', name: 'Local Instructor' },
+  pairedCourse: null,
 } satisfies CourseSummary;
 
 describe('catalog filters', () => {
@@ -24,8 +26,19 @@ describe('catalog filters', () => {
     expect(matchesPriceBand('250000.00', '')).toBe(true);
   });
 
-  it('filters by phase, level, and price together', () => {
-    const other = { ...course, id: 'course-2', level: 'A1' as const, phase: 'A' as const, price: '50000.00' };
-    expect(filterCatalog([course, other], { phase: 'D', level: 'B1', price: '100k-500k' }).map((item) => item.id)).toEqual(['course-1']);
+  it('filters by track, band, language, and price together', () => {
+    const other = {
+      ...course,
+      id: 'course-2',
+      level: 'ADVANCED' as const,
+      track: 'AI' as const,
+      contentLocale: 'EN' as const,
+      price: '50000.00',
+    };
+    expect(
+      filterCatalog([course, other], { track: 'NETWORK', level: 'FOUNDATION', contentLocale: 'ID', price: '100k-500k' }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(['course-1']);
   });
 });

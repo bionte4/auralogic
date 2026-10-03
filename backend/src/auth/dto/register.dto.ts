@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { UiLocale } from '@prisma/client';
 
 export class RegisterDto {
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
@@ -18,4 +19,8 @@ export class RegisterDto {
     message: 'Password must include a letter and a number.',
   })
   password!: string;
+
+  @IsOptional()
+  @IsEnum(UiLocale)
+  locale?: UiLocale;
 }

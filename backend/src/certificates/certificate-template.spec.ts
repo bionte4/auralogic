@@ -21,6 +21,7 @@ describe('certificate template', () => {
       completionDate: '2 October 2026',
       certificateId,
       verifyUrl,
+      locale: 'EN',
     });
 
     expect(html).toContain('Alya &lt;script&gt;');
