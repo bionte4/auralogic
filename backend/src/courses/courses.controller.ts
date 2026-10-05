@@ -20,7 +20,7 @@ import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import type { CourseDetail, CourseRoster, CourseSummary, CreatedLesson, CreatedModule, PublicCourseCard } from './course.types';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, ListCoursesQueryDto, UpdateCourseDto } from './dto/course.dto';
-import { CreateLessonDto } from './dto/lesson.dto';
+import { CreateLessonDto, UpdateLessonDto } from './dto/lesson.dto';
 import { CreateModuleDto, UpdateModuleDto } from './dto/module.dto';
 import { AddClassMemberDto, CreateCourseClassDto } from './dto/course-class.dto';
 import { SavePhaseProjectDto, ScorePhaseProjectDto, SubmitPhaseProjectDto } from './dto/phase-project.dto';
@@ -235,5 +235,17 @@ export class CoursesController {
     @Body() dto: CreateLessonDto,
   ): Promise<CreatedLesson> {
     return this.coursesService.addLesson(user, courseId, moduleId, dto);
+  }
+
+  @Patch(':courseId/modules/:moduleId/lessons/:lessonId')
+  @Roles(Role.INSTRUCTOR, Role.SUPER_ADMIN)
+  updateLesson(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+    @Param('moduleId', ParseUUIDPipe) moduleId: string,
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+    @Body() dto: UpdateLessonDto,
+  ): Promise<CreatedLesson> {
+    return this.coursesService.updateLesson(user, courseId, moduleId, lessonId, dto);
   }
 }

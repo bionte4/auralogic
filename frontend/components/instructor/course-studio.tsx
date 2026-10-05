@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
 import { formatIdr, LESSON_TYPES, validateLessonDraft, validateModuleTitle, type LessonDraft } from '@/lib/course-draft';
-import type { CourseDetail, CourseRoster, CreatedLesson, CreatedModule } from '@/lib/courses';
+import type { CourseDetail, CourseRoster, CreatedLesson, CreatedModule, LessonSummary } from '@/lib/courses';
 import { readSession } from '@/lib/session';
 
 type StudioTab = 'outline' | 'video' | 'students';
@@ -215,8 +215,12 @@ function Outline({
     }
   }
 
+  const { m } = useI18n();
+  const editable = course.status === 'DRAFT';
+
   return (
     <div className="flex flex-col gap-4">
+      {editable ? <p className="text-sm text-muted-foreground">{m.studio.draftHint}</p> : null}
       <CourseProfileForm course={course} onSaved={onChange} onError={onError} />
       <PlacementEditor courseId={course.id} levelCount={Math.max(1, course.modules.length)} />
       <PhaseProjectForm courseId={course.id} />
@@ -258,20 +262,26 @@ function Outline({
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {module.outcome ? <p className="text-sm text-muted-foreground">{module.outcome}</p> : null}
+              <ModuleEditor
+                courseId={course.id}
+                moduleId={module.id}
+                title={module.title}
+                outcome={module.outcome}
+                editable={editable}
+                onChange={onChange}
+                onError={onError}
+              />
               <ol className="flex flex-col gap-2">
                 {module.lessons.map((lesson) => (
                   <li key={lesson.id} className="flex flex-col gap-3 text-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <span>
-                        Lesson {lesson.orderIndex} · {lesson.title}
-                      </span>
-                      <Badge>
-                        {lesson.type}
-                        {lesson.type === 'VIDEO' && lesson.hasStream ? ' · HLS' : ''}
-                        {lesson.passingScore !== null ? ` · ${lesson.passingScore}` : ''}
-                      </Badge>
-                    </div>
+                    <LessonEditor
+                      courseId={course.id}
+                      moduleId={module.id}
+                      lesson={lesson}
+                      editable={editable}
+                      onChange={onChange}
+                      onError={onError}
+                    />
                     {lesson.type === 'QUIZ' ? <QuizBankForm lessonId={lesson.id} onError={onError} /> : null}
                     <LessonMaterials lessonId={lesson.id} onError={onError} />
                   </li>
@@ -325,6 +335,221 @@ function Outline({
         );
       })}
     </div>
+  );
+}
+
+function ModuleEditor({
+  courseId,
+  moduleId,
+  title,
+  outcome,
+  editable,
+  onChange,
+  onError,
+}: {
+  courseId: string;
+  moduleId: string;
+  title: string;
+  outcome: string | null;
+  editable: boolean;
+  onChange: () => Promise<void>;
+  onError: (message: string | null) => void;
+}) {
+  const { m } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [nextTitle, setNextTitle] = useState(title);
+  const [nextOutcome, setNextOutcome] = useState(outcome ?? '');
+  const [pending, setPending] = useState(false);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const validation = validateModuleTitle(nextTitle);
+    if (validation) {
+      onError(validation);
+      return;
+    }
+    setPending(true);
+    onError(null);
+    try {
+      await apiRequest(`/courses/${courseId}/modules/${moduleId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title: nextTitle.trim(), outcome: nextOutcome.trim() || null }),
+      });
+      setOpen(false);
+      await onChange();
+    } catch (caught) {
+      onError(caught instanceof ApiError ? caught.message : m.studio.moduleSaveError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (!editable) {
+    return outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : null;
+  }
+  if (!open) {
+    return (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : <span />}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setNextTitle(title);
+            setNextOutcome(outcome ?? '');
+            setOpen(true);
+          }}
+        >
+          {m.studio.edit}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form className="flex flex-col gap-3" onSubmit={(event) => void save(event)}>
+      <Label htmlFor={`module-edit-${moduleId}`}>{m.studio.moduleTitle}</Label>
+      <Input id={`module-edit-${moduleId}`} value={nextTitle} onChange={(event) => setNextTitle(event.target.value)} />
+      <Label htmlFor={`module-outcome-${moduleId}`}>{m.studio.moduleOutcome}</Label>
+      <Input
+        id={`module-outcome-${moduleId}`}
+        value={nextOutcome}
+        onChange={(event) => setNextOutcome(event.target.value)}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending ? m.studio.saving : m.studio.save}
+        </Button>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => setOpen(false)}>
+          {m.studio.cancel}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function LessonEditor({
+  courseId,
+  moduleId,
+  lesson,
+  editable,
+  onChange,
+  onError,
+}: {
+  courseId: string;
+  moduleId: string;
+  lesson: LessonSummary;
+  editable: boolean;
+  onChange: () => Promise<void>;
+  onError: (message: string | null) => void;
+}) {
+  const { m } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<LessonDraft>({
+    title: lesson.title,
+    type: lesson.type,
+    passingScore: lesson.passingScore === null ? '80' : String(lesson.passingScore),
+  });
+  const [pending, setPending] = useState(false);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const validation = validateLessonDraft(draft);
+    if (validation) {
+      onError(validation);
+      return;
+    }
+    setPending(true);
+    onError(null);
+    try {
+      await apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: draft.title.trim(),
+          type: draft.type,
+          ...(draft.type === 'QUIZ' ? { passingScore: Number(draft.passingScore) } : {}),
+        }),
+      });
+      setOpen(false);
+      await onChange();
+    } catch (caught) {
+      onError(caught instanceof ApiError ? caught.message : m.studio.lessonSaveError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const summary = (
+    <div className="flex items-center justify-between gap-3">
+      <span>
+        Lesson {lesson.orderIndex} · {lesson.title}
+      </span>
+      <span className="flex items-center gap-2">
+        <Badge>
+          {lesson.type}
+          {lesson.type === 'VIDEO' && lesson.hasStream ? ' · HLS' : ''}
+          {lesson.passingScore !== null ? ` · ${lesson.passingScore}` : ''}
+        </Badge>
+        {editable ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setDraft({
+                title: lesson.title,
+                type: lesson.type,
+                passingScore: lesson.passingScore === null ? '80' : String(lesson.passingScore),
+              });
+              setOpen(true);
+            }}
+          >
+            {m.studio.edit}
+          </Button>
+        ) : null}
+      </span>
+    </div>
+  );
+
+  if (!open) {
+    return summary;
+  }
+  return (
+    <form className="grid gap-2 sm:grid-cols-[1fr_8rem_6rem_auto_auto]" onSubmit={(event) => void save(event)}>
+      <Input
+        aria-label={m.studio.lessonTitle}
+        value={draft.title}
+        onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+      />
+      <select
+        aria-label="Lesson type"
+        className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+        value={draft.type}
+        onChange={(event) => setDraft({ ...draft, type: event.target.value as LessonDraft['type'] })}
+      >
+        {LESSON_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+      {draft.type === 'QUIZ' ? (
+        <Input
+          aria-label={m.studio.passingScore}
+          inputMode="numeric"
+          value={draft.passingScore}
+          onChange={(event) => setDraft({ ...draft, passingScore: event.target.value })}
+        />
+      ) : (
+        <span />
+      )}
+      <Button type="submit" size="sm" disabled={pending}>
+        {pending ? m.studio.saving : m.studio.save}
+      </Button>
+      <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => setOpen(false)}>
+        {m.studio.cancel}
+      </Button>
+    </form>
   );
 }
 

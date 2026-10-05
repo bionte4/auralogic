@@ -22,7 +22,7 @@ import type {
   PublicCourseCard,
 } from './course.types';
 import type { CreateCourseDto, ListCoursesQueryDto, UpdateCourseDto } from './dto/course.dto';
-import type { CreateLessonDto } from './dto/lesson.dto';
+import type { CreateLessonDto, UpdateLessonDto } from './dto/lesson.dto';
 import type { CreateModuleDto, UpdateModuleDto } from './dto/module.dto';
 
 const instructorSelect = { id: true, name: true } satisfies Prisma.UserSelect;
@@ -393,7 +393,10 @@ export class CoursesService {
     moduleId: string,
     dto: UpdateModuleDto,
   ): Promise<CreatedModule> {
-    await this.requireManagedCourse(user, courseId);
+    const course = await this.requireManagedCourse(user, courseId);
+    if (dto.title !== undefined && course.status !== CourseStatus.DRAFT) {
+      throw new ConflictException('Only a draft course can change a module title.');
+    }
     const existing = await this.prisma.module.findFirst({
       where: { id: moduleId, courseId },
       select: { id: true },
@@ -401,9 +404,16 @@ export class CoursesService {
     if (!existing) {
       throw new NotFoundException('Module not found in this course.');
     }
+    const data: Prisma.ModuleUpdateInput = {};
+    if (dto.title !== undefined) {
+      data.title = dto.title.trim();
+    }
+    if (dto.outcome !== undefined) {
+      data.outcome = blankToNull(dto.outcome);
+    }
     const updated = await this.prisma.module.update({
       where: { id: moduleId },
-      data: dto.outcome !== undefined ? { outcome: blankToNull(dto.outcome) } : {},
+      data,
       select: {
         id: true,
         courseId: true,
@@ -458,6 +468,56 @@ export class CoursesService {
     return created;
   }
 
+  async updateLesson(
+    user: AuthenticatedUser,
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+    dto: UpdateLessonDto,
+  ): Promise<CreatedLesson> {
+    const course = await this.requireManagedCourse(user, courseId);
+    if (course.status !== CourseStatus.DRAFT) {
+      throw new ConflictException('Only a draft course can change a saved lesson.');
+    }
+    const existing = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, moduleId, module: { courseId } },
+      select: { id: true, type: true, passingScore: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Lesson not found in this module.');
+    }
+
+    const nextType = dto.type ?? existing.type;
+    const nextScore = dto.passingScore !== undefined ? dto.passingScore : existing.passingScore;
+    if (nextType === LessonType.QUIZ && nextScore === null) {
+      throw new BadRequestException('Quiz lessons require a passing score.');
+    }
+    if (nextType !== LessonType.QUIZ && dto.passingScore !== undefined) {
+      throw new BadRequestException('Passing score is only valid for quiz lessons.');
+    }
+
+    const updated = await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.description !== undefined ? { description: dto.description.trim() } : {}),
+        ...(dto.type !== undefined ? { type: dto.type } : {}),
+        passingScore: nextType === LessonType.QUIZ ? nextScore : null,
+      },
+      select: {
+        id: true,
+        moduleId: true,
+        title: true,
+        description: true,
+        type: true,
+        orderIndex: true,
+        passingScore: true,
+      },
+    });
+    await this.cache?.delete(courseStructureKey(courseId));
+    return updated;
+  }
+
   private assertLessonPayload(dto: CreateLessonDto): void {
     if (dto.type === LessonType.QUIZ && dto.passingScore === undefined) {
       throw new BadRequestException('Quiz lessons require a passing score.');
@@ -485,10 +545,13 @@ export class CoursesService {
     return (last?.orderIndex ?? 0) + 1;
   }
 
-  private async requireManagedCourse(user: AuthenticatedUser, courseId: string): Promise<{ publishedAt: Date | null }> {
+  private async requireManagedCourse(
+    user: AuthenticatedUser,
+    courseId: string,
+  ): Promise<{ publishedAt: Date | null; status: CourseStatus }> {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, instructorId: true, publishedAt: true },
+      select: { id: true, instructorId: true, publishedAt: true, status: true },
     });
     if (!course) {
       throw new NotFoundException('Course not found.');

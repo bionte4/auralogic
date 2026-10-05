@@ -23,3 +23,27 @@ export class CreateLessonDto {
   @Max(100)
   passingScore?: number;
 }
+
+export class UpdateLessonDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+
+  @IsOptional()
+  @IsEnum(LessonType)
+  type?: LessonType;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  passingScore?: number;
+}

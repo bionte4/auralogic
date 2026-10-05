@@ -20,6 +20,12 @@ export class CreateModuleDto {
 export class UpdateModuleDto {
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(2000)
   outcome?: string | null;
 }

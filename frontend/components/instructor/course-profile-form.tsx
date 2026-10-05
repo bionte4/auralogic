@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { CONTENT_LOCALES, TRACKS } from '@/lib/course-draft';
-import type { ContentLocale, CourseDetail, CourseSummary, LearningTrack } from '@/lib/courses';
+import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, validateCourseDraft } from '@/lib/course-draft';
+import type { ContentLocale, CourseDetail, CourseSummary, LearningTrack, SkillBand } from '@/lib/courses';
 
 export function CourseProfileForm({
   course,
@@ -21,6 +21,11 @@ export function CourseProfileForm({
   onError: (message: string | null) => void;
 }) {
   const { m } = useI18n();
+  const draft = course.status === 'DRAFT';
+  const [title, setTitle] = useState(course.title);
+  const [description, setDescription] = useState(course.description);
+  const [level, setLevel] = useState<SkillBand>(course.level);
+  const [price, setPrice] = useState(String(Math.trunc(Number(course.price))));
   const [coverImageUrl, setCoverImageUrl] = useState(course.coverImageUrl ?? '');
   const [track, setTrack] = useState<LearningTrack>(course.track);
   const [contentLocale, setContentLocale] = useState<ContentLocale>(course.contentLocale);
@@ -28,6 +33,18 @@ export function CourseProfileForm({
   const [options, setOptions] = useState<CourseSummary[]>([]);
   const [outcome, setOutcome] = useState(course.outcome ?? '');
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setTitle(course.title);
+    setDescription(course.description);
+    setLevel(course.level);
+    setPrice(String(Math.trunc(Number(course.price))));
+    setCoverImageUrl(course.coverImageUrl ?? '');
+    setTrack(course.track);
+    setContentLocale(course.contentLocale);
+    setPairedCourseId(course.pairedCourse?.id ?? '');
+    setOutcome(course.outcome ?? '');
+  }, [course]);
 
   useEffect(() => {
     void apiRequest<CourseSummary[]>('/courses')
@@ -42,12 +59,34 @@ export function CourseProfileForm({
       onError(m.studio.coverError);
       return;
     }
+    if (draft) {
+      const validation = validateCourseDraft({
+        title,
+        description,
+        level,
+        track,
+        contentLocale,
+        price,
+      });
+      if (validation) {
+        onError(m.draft[validation === 'price-range' ? 'priceRange' : validation]);
+        return;
+      }
+    }
     setPending(true);
     onError(null);
     try {
       await apiRequest(`/courses/${course.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
+          ...(draft
+            ? {
+                title: title.trim(),
+                description: description.trim(),
+                level,
+                price: Number(price),
+              }
+            : {}),
           coverImageUrl: trimmedCover || null,
           track,
           contentLocale,
@@ -70,6 +109,46 @@ export function CourseProfileForm({
       </CardHeader>
       <CardContent>
         <form className="flex flex-col gap-3" onSubmit={(event) => void save(event)}>
+          {draft ? (
+            <>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="course-title">{m.studio.title}</Label>
+                <Input id="course-title" value={title} onChange={(event) => setTitle(event.target.value)} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="course-description">{m.studio.description}</Label>
+                <Textarea
+                  id="course-description"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="course-band">{m.studio.band}</Label>
+                <select
+                  id="course-band"
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+                  value={level}
+                  onChange={(event) => setLevel(event.target.value as SkillBand)}
+                >
+                  {SKILL_BANDS.map((item) => (
+                    <option key={item} value={item}>
+                      {m.bands[item]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="course-price">{m.studio.price}</Label>
+                <Input
+                  id="course-price"
+                  inputMode="numeric"
+                  value={price}
+                  onChange={(event) => setPrice(event.target.value)}
+                />
+              </div>
+            </>
+          ) : null}
           <div className="flex flex-col gap-2">
             <Label htmlFor="cover-url">{m.studio.cover}</Label>
             <Input

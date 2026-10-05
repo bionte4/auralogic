@@ -42,6 +42,14 @@ Di studio, satu modul ditampilkan sebagai **Level**. Urutan itulah yang dikunci 
    - **Quiz**, dengan nilai lulus. Studio mulai dari 80.
 4. Untuk kuis, tambah pertanyaan dan pilihan. Peserta tidak pernah menerima kunci jawaban. Server mengacak pertanyaan lalu menilai upaya itu.
 
+Selama lencana masih **DRAFT**, tiap bagian bisa diubah:
+
+1. Di kartu **Katalog**, ubah judul, deskripsi, jenjang, dan harga, lalu pilih **Simpan profil**.
+2. Pada sebuah level, pilih **Edit**, ubah judul atau hasil belajar modul, lalu **Simpan**.
+3. Pada sebuah pelajaran yang sudah ada, pilih **Edit**, ubah judul, jenis, atau nilai lulus, lalu **Simpan**.
+
+**Batal** menutup formulir tanpa menyimpan. Setelah **Publish**, judul modul dan pelajaran yang sudah tersimpan tidak bisa diubah lagi. Pelajaran baru masih bisa ditambah.
+
 Jangan mengubah urutan level saat peserta sudah di tengah kursus. Urutan baru mengubah siapa yang boleh lanjut.
 
 Materi cybersecurity tetap pada risiko, baseline, log, dan rekomendasi hardening. Jangan menaruh langkah serangan, malware, atau lab eksploit di pelajaran, kuis, atau lampiran.
