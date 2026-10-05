@@ -12,12 +12,19 @@ const LESSON_ID = '11111111-1111-4111-8111-111111111111';
 describe('AttachmentsService', () => {
   const prisma = {
     lesson: { findUnique: jest.fn() },
-    lessonAttachment: { count: jest.fn(), create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
+    lessonAttachment: {
+      count: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      delete: jest.fn(),
+    },
   };
   const progress = { assertLessonAccessible: jest.fn() };
   const store: AttachmentStore = {
     put: jest.fn(async () => undefined),
     read: jest.fn(async () => ({}) as Readable),
+    remove: jest.fn(async () => undefined),
   };
   const service = new AttachmentsService(
     prisma as unknown as PrismaService,
@@ -56,5 +63,24 @@ describe('AttachmentsService', () => {
     expect(stored.endsWith('.pdf')).toBe(true);
     expect(saved.fileName).toBe('notes.pdf');
     expect(JSON.stringify(saved)).not.toContain(stored);
+  });
+
+  it('lets only an admin delete a stored material', async () => {
+    const admin: AuthenticatedUser = {
+      id: 'admin-1',
+      email: 'admin@auralogic.web.id',
+      name: 'Admin',
+      role: Role.SUPER_ADMIN,
+      locale: 'ID',
+    };
+    prisma.lessonAttachment.findFirst.mockResolvedValue({
+      id: 'attachment-1',
+      objectKey: `lessons/${LESSON_ID}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.pdf`,
+    });
+
+    await expect(service.remove(instructor, LESSON_ID, 'attachment-1')).rejects.toBeInstanceOf(ForbiddenException);
+    await service.remove(admin, LESSON_ID, 'attachment-1');
+    expect(store.remove).toHaveBeenCalled();
+    expect(prisma.lessonAttachment.delete).toHaveBeenCalledWith({ where: { id: 'attachment-1' } });
   });
 });

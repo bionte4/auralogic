@@ -86,6 +86,21 @@ export class AttachmentsService {
     };
   }
 
+  async remove(user: AuthenticatedUser, lessonId: string, attachmentId: string): Promise<void> {
+    if (user.role !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Only an admin can delete lesson materials.');
+    }
+    const attachment = await this.prisma.lessonAttachment.findFirst({
+      where: { id: attachmentId, lessonId },
+      select: { id: true, objectKey: true },
+    });
+    if (!attachment) {
+      throw new NotFoundException('Lesson material not found.');
+    }
+    await this.store.remove(attachment.objectKey);
+    await this.prisma.lessonAttachment.delete({ where: { id: attachment.id } });
+  }
+
   async list(lessonId: string): Promise<AttachmentView[]> {
     return this.prisma.lessonAttachment.findMany({
       where: { lessonId },

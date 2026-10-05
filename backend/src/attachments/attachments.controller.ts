@@ -1,6 +1,9 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -50,6 +53,17 @@ export class InstructorAttachmentsController {
       throw new BadRequestException('Choose a PPT, PPTX, PDF, or DOCX file.');
     }
     return this.attachments.upload(user, lessonId, file);
+  }
+
+  @Delete(':lessonId/attachments/:attachmentId')
+  @Roles(Role.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+  ): Promise<void> {
+    return this.attachments.remove(user, lessonId, attachmentId);
   }
 }
 

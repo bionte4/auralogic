@@ -69,4 +69,12 @@ Membuka URL itu di peramban tidak mencatat pembayaran. Yang membuka kursus adala
 
 Admin dapat membuka **Courses** dan memakai studio yang sama dengan instruktur, termasuk menerbitkan kursus dan menilai tugas akhir.
 
+Di tab **Outline**, admin melihat tombol **Hapus** pada modul, pelajaran, dan berkas PPT, PDF, atau DOCX. Instruktur tidak melihat tombol itu. Sebelum menghapus, layar meminta konfirmasi.
+
+- Menghapus modul menghapus setiap pelajaran di dalamnya, berkas materi, video, progres, dan nilai kuis pada pelajaran itu.
+- Menghapus pelajaran menghapus progres dan nilai kuis pada pelajaran itu.
+- Menghapus berkas hanya menghapus lampiran itu.
+- Nomor urut modul dan pelajaran yang tersisa disusun ulang otomatis.
+- Kursus utuh yang sudah punya pendaftaran atau sertifikat tidak bisa dihapus. Gunakan arsip jika kursus harus hilang dari katalog tanpa menghapus riwayat pembayaran.
+
 Akses peserta yang membayar tetap menunggu notifikasi pembayaran yang terverifikasi. Kembali dari halaman bank tidak membuka kursus. Sertifikat terbit di akun peserta setelah setiap pelajaran kursus itu selesai. Halaman cek publik ada di `/verify/<id-sertifikat>` dan tidak menampilkan email peserta.

@@ -8,6 +8,8 @@ import {
   Optional,
 } from '@nestjs/common';
 import { CourseStatus, LessonType, Prisma, ProgressStatus, Role } from '@prisma/client';
+import type { AttachmentStore } from '../attachments/attachment.store';
+import { ATTACHMENT_STORE } from '../attachments/attachment.tokens';
 import { CacheService, courseStructureKey } from '../cache/cache.service';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import { PrismaService } from '../prisma/prisma.service';
@@ -54,6 +56,7 @@ export class CoursesService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() @Inject(CacheService) private readonly cache?: CacheService,
+    @Optional() @Inject(ATTACHMENT_STORE) private readonly attachments?: AttachmentStore,
   ) {}
 
   async create(user: AuthenticatedUser, dto: CreateCourseDto): Promise<CourseSummary> {
@@ -468,6 +471,56 @@ export class CoursesService {
     return created;
   }
 
+  async removeModule(user: AuthenticatedUser, courseId: string, moduleId: string): Promise<void> {
+    this.assertSuperAdmin(user);
+    await this.requireManagedCourse(user, courseId);
+    const courseModule = await this.prisma.module.findFirst({
+      where: { id: moduleId, courseId },
+      select: {
+        id: true,
+        lessons: { select: { id: true, attachments: { select: { objectKey: true } } } },
+      },
+    });
+    if (!courseModule) {
+      throw new NotFoundException('Module not found in this course.');
+    }
+    const objectKeys = courseModule.lessons.flatMap((lesson) => lesson.attachments.map((item) => item.objectKey));
+    const lessonIds = courseModule.lessons.map((lesson) => lesson.id);
+    await this.prisma.module.delete({ where: { id: moduleId } });
+    await this.purgeAttachmentKeys(objectKeys);
+    if (lessonIds.length > 0) {
+      await this.prisma.userBadge.deleteMany({ where: { sourceId: { in: [...lessonIds, moduleId] } } });
+    } else {
+      await this.prisma.userBadge.deleteMany({ where: { sourceId: moduleId } });
+    }
+    await this.renumberModules(courseId);
+    await this.clampPlacementTargets(courseId);
+    await this.cache?.delete(courseStructureKey(courseId));
+  }
+
+  async removeLesson(
+    user: AuthenticatedUser,
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+  ): Promise<void> {
+    this.assertSuperAdmin(user);
+    await this.requireManagedCourse(user, courseId);
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, moduleId, module: { courseId } },
+      select: { id: true, attachments: { select: { objectKey: true } } },
+    });
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found in this module.');
+    }
+    const objectKeys = lesson.attachments.map((item) => item.objectKey);
+    await this.prisma.lesson.delete({ where: { id: lessonId } });
+    await this.purgeAttachmentKeys(objectKeys);
+    await this.prisma.userBadge.deleteMany({ where: { sourceId: lessonId } });
+    await this.renumberLessons(moduleId);
+    await this.cache?.delete(courseStructureKey(courseId));
+  }
+
   async updateLesson(
     user: AuthenticatedUser,
     courseId: string,
@@ -568,6 +621,72 @@ export class CoursesService {
       return;
     }
     throw new ForbiddenException('You can only manage your own courses.');
+  }
+
+  private assertSuperAdmin(user: AuthenticatedUser): void {
+    if (user.role !== Role.SUPER_ADMIN) {
+      throw new ForbiddenException('Only an admin can delete modules and lessons.');
+    }
+  }
+
+  private async purgeAttachmentKeys(objectKeys: string[]): Promise<void> {
+    if (!this.attachments || objectKeys.length === 0) {
+      return;
+    }
+    await Promise.all(objectKeys.map((objectKey) => this.attachments?.remove(objectKey)));
+  }
+
+  private async renumberLessons(moduleId: string): Promise<void> {
+    const remaining = await this.prisma.lesson.findMany({
+      where: { moduleId },
+      orderBy: { orderIndex: 'asc' },
+      select: { id: true },
+    });
+    for (const [index, lesson] of remaining.entries()) {
+      await this.prisma.lesson.update({
+        where: { id: lesson.id },
+        data: { orderIndex: -(index + 1) },
+      });
+    }
+    for (const [index, lesson] of remaining.entries()) {
+      await this.prisma.lesson.update({
+        where: { id: lesson.id },
+        data: { orderIndex: index + 1 },
+      });
+    }
+  }
+
+  private async renumberModules(courseId: string): Promise<void> {
+    const remaining = await this.prisma.module.findMany({
+      where: { courseId },
+      orderBy: { orderIndex: 'asc' },
+      select: { id: true },
+    });
+    for (const [index, courseModule] of remaining.entries()) {
+      await this.prisma.module.update({
+        where: { id: courseModule.id },
+        data: { orderIndex: -(index + 1) },
+      });
+    }
+    for (const [index, courseModule] of remaining.entries()) {
+      await this.prisma.module.update({
+        where: { id: courseModule.id },
+        data: { orderIndex: index + 1 },
+      });
+    }
+  }
+
+  private async clampPlacementTargets(courseId: string): Promise<void> {
+    const moduleCount = await this.prisma.module.count({ where: { courseId } });
+    const maxOrder = Math.max(1, moduleCount);
+    await this.prisma.placementChoice.updateMany({
+      where: { question: { courseId }, targetOrderIndex: { gt: maxOrder } },
+      data: { targetOrderIndex: maxOrder },
+    });
+    await this.prisma.coursePlacement.updateMany({
+      where: { courseId, startOrderIndex: { gt: maxOrder } },
+      data: { startOrderIndex: maxOrder },
+    });
   }
 
   private assertCanView(user: AuthenticatedUser, course: { status: CourseStatus; instructorId: string }): void {

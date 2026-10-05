@@ -1,12 +1,13 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createReadStream, mkdirSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, unlink, writeFile } from 'fs/promises';
 import path from 'path';
 import { Readable } from 'stream';
 
 export interface AttachmentStore {
   put(objectKey: string, body: Buffer, contentType: string): Promise<void>;
   read(objectKey: string): Promise<Readable>;
+  remove(objectKey: string): Promise<void>;
 }
 
 export class LocalAttachmentStore implements AttachmentStore {
@@ -24,6 +25,18 @@ export class LocalAttachmentStore implements AttachmentStore {
     const full = this.resolve(objectKey);
     await readFile(full);
     return createReadStream(full);
+  }
+
+  async remove(objectKey: string): Promise<void> {
+    const full = this.resolve(objectKey);
+    try {
+      await unlink(full);
+    } catch (error) {
+      if (isMissingFile(error)) {
+        return;
+      }
+      throw error;
+    }
   }
 
   private resolve(objectKey: string): string {
@@ -75,6 +88,14 @@ export class S3AttachmentStore implements AttachmentStore {
     }
     return result.Body;
   }
+
+  async remove(objectKey: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: objectKey }));
+  }
+}
+
+function isMissingFile(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'ENOENT';
 }
 
 export function createAttachmentStore(env: NodeJS.ProcessEnv = process.env): AttachmentStore {

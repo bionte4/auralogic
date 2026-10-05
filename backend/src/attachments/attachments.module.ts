@@ -13,6 +13,6 @@ import { AttachmentsService } from './attachments.service';
     AttachmentsService,
     { provide: ATTACHMENT_STORE, useFactory: () => createAttachmentStore() },
   ],
-  exports: [AttachmentsService],
+  exports: [AttachmentsService, ATTACHMENT_STORE],
 })
 export class AttachmentsModule {}

@@ -114,6 +114,7 @@ export function CourseStudio({ courseId }: { courseId: string }) {
       {tab === 'outline' ? (
         <Outline
           course={course}
+          canDelete={readSession()?.role === 'SUPER_ADMIN'}
           onChange={async () => {
             await load();
           }}
@@ -155,10 +156,12 @@ export function CourseStudio({ courseId }: { courseId: string }) {
 
 function Outline({
   course,
+  canDelete,
   onChange,
   onError,
 }: {
   course: CourseDetail;
+  canDelete: boolean;
   onChange: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
@@ -221,6 +224,7 @@ function Outline({
   return (
     <div className="flex flex-col gap-4">
       {editable ? <p className="text-sm text-muted-foreground">{m.studio.draftHint}</p> : null}
+      {canDelete ? <p className="text-sm text-muted-foreground">{m.studio.adminDeleteHint}</p> : null}
       <CourseProfileForm course={course} onSaved={onChange} onError={onError} />
       <PlacementEditor courseId={course.id} levelCount={Math.max(1, course.modules.length)} />
       <PhaseProjectForm courseId={course.id} />
@@ -268,6 +272,7 @@ function Outline({
                 title={module.title}
                 outcome={module.outcome}
                 editable={editable}
+                canDelete={canDelete}
                 onChange={onChange}
                 onError={onError}
               />
@@ -279,11 +284,12 @@ function Outline({
                       moduleId={module.id}
                       lesson={lesson}
                       editable={editable}
+                      canDelete={canDelete}
                       onChange={onChange}
                       onError={onError}
                     />
                     {lesson.type === 'QUIZ' ? <QuizBankForm lessonId={lesson.id} onError={onError} /> : null}
-                    <LessonMaterials lessonId={lesson.id} onError={onError} />
+                    <LessonMaterials lessonId={lesson.id} canDelete={canDelete} onError={onError} />
                   </li>
                 ))}
               </ol>
@@ -344,6 +350,7 @@ function ModuleEditor({
   title,
   outcome,
   editable,
+  canDelete,
   onChange,
   onError,
 }: {
@@ -352,6 +359,7 @@ function ModuleEditor({
   title: string;
   outcome: string | null;
   editable: boolean;
+  canDelete: boolean;
   onChange: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
@@ -384,17 +392,30 @@ function ModuleEditor({
     }
   }
 
-  if (!editable) {
-    return outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : null;
+  async function remove(): Promise<void> {
+    if (!window.confirm(m.studio.deleteModuleConfirm)) {
+      return;
+    }
+    setPending(true);
+    onError(null);
+    try {
+      await apiRequest(`/courses/${courseId}/modules/${moduleId}`, { method: 'DELETE' });
+      await onChange();
+    } catch (caught) {
+      onError(caught instanceof ApiError ? caught.message : m.studio.moduleDeleteError);
+    } finally {
+      setPending(false);
+    }
   }
-  if (!open) {
-    return (
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        {outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : <span />}
+
+  const actions = (
+    <div className="flex gap-2">
+      {editable ? (
         <Button
           type="button"
           size="sm"
           variant="outline"
+          disabled={pending}
           onClick={() => {
             setNextTitle(title);
             setNextOutcome(outcome ?? '');
@@ -403,6 +424,23 @@ function ModuleEditor({
         >
           {m.studio.edit}
         </Button>
+      ) : null}
+      {canDelete ? (
+        <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={() => void remove()}>
+          {pending ? m.studio.deleting : m.studio.delete}
+        </Button>
+      ) : null}
+    </div>
+  );
+
+  if (!editable && !canDelete) {
+    return outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : null;
+  }
+  if (!open) {
+    return (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {outcome ? <p className="text-sm text-muted-foreground">{outcome}</p> : <span />}
+        {actions}
       </div>
     );
   }
@@ -433,6 +471,7 @@ function LessonEditor({
   moduleId,
   lesson,
   editable,
+  canDelete,
   onChange,
   onError,
 }: {
@@ -440,6 +479,7 @@ function LessonEditor({
   moduleId: string;
   lesson: LessonSummary;
   editable: boolean;
+  canDelete: boolean;
   onChange: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
@@ -479,6 +519,22 @@ function LessonEditor({
     }
   }
 
+  async function remove(): Promise<void> {
+    if (!window.confirm(m.studio.deleteLessonConfirm)) {
+      return;
+    }
+    setPending(true);
+    onError(null);
+    try {
+      await apiRequest(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`, { method: 'DELETE' });
+      await onChange();
+    } catch (caught) {
+      onError(caught instanceof ApiError ? caught.message : m.studio.lessonDeleteError);
+    } finally {
+      setPending(false);
+    }
+  }
+
   const summary = (
     <div className="flex items-center justify-between gap-3">
       <span>
@@ -495,6 +551,7 @@ function LessonEditor({
             type="button"
             size="sm"
             variant="outline"
+            disabled={pending}
             onClick={() => {
               setDraft({
                 title: lesson.title,
@@ -505,6 +562,11 @@ function LessonEditor({
             }}
           >
             {m.studio.edit}
+          </Button>
+        ) : null}
+        {canDelete ? (
+          <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={() => void remove()}>
+            {pending ? m.studio.deleting : m.studio.delete}
           </Button>
         ) : null}
       </span>

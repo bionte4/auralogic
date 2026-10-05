@@ -226,6 +226,17 @@ export class CoursesController {
     return this.coursesService.updateModule(user, courseId, moduleId, dto);
   }
 
+  @Delete(':courseId/modules/:moduleId')
+  @Roles(Role.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeModule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+    @Param('moduleId', ParseUUIDPipe) moduleId: string,
+  ): Promise<void> {
+    return this.coursesService.removeModule(user, courseId, moduleId);
+  }
+
   @Post(':courseId/modules/:moduleId/lessons')
   @Roles(Role.INSTRUCTOR, Role.SUPER_ADMIN)
   addLesson(
@@ -247,5 +258,17 @@ export class CoursesController {
     @Body() dto: UpdateLessonDto,
   ): Promise<CreatedLesson> {
     return this.coursesService.updateLesson(user, courseId, moduleId, lessonId, dto);
+  }
+
+  @Delete(':courseId/modules/:moduleId/lessons/:lessonId')
+  @Roles(Role.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeLesson(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+    @Param('moduleId', ParseUUIDPipe) moduleId: string,
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
+  ): Promise<void> {
+    return this.coursesService.removeLesson(user, courseId, moduleId, lessonId);
   }
 }
