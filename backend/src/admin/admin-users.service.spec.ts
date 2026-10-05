@@ -15,8 +15,9 @@ const admin: AuthenticatedUser = {
 
 describe('AdminUsersService', () => {
   const tx = {
-    user: { create: jest.fn() },
+    user: { create: jest.fn(), update: jest.fn() },
     enrollment: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    passwordResetToken: { deleteMany: jest.fn() },
   };
   const prisma = {
     user: { count: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
@@ -45,6 +46,59 @@ describe('AdminUsersService', () => {
 
     await expect(service.update(admin, admin.id, { active: false })).rejects.toBeInstanceOf(ForbiddenException);
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('updates a display name', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'student-1', role: Role.STUDENT, active: true });
+    prisma.user.update.mockResolvedValue({
+      id: 'student-1',
+      email: 'alya@corp.test',
+      name: 'Alya Baru',
+      role: Role.STUDENT,
+      active: true,
+      createdAt: new Date('2026-10-05T00:00:00.000Z'),
+    });
+
+    const updated = await service.update(admin, 'student-1', { name: 'Alya Baru' });
+
+    expect(updated.name).toBe('Alya Baru');
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ name: 'Alya Baru' }),
+      }),
+    );
+  });
+
+  it('resets an active account password and clears outstanding reset tokens', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'student-1',
+      email: 'alya@corp.test',
+      name: 'Alya',
+      active: true,
+    });
+    tx.user.update.mockResolvedValue({ id: 'student-1' });
+    tx.passwordResetToken.deleteMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.resetPassword('student-1');
+
+    expect(result.email).toBe('alya@corp.test');
+    expect(result.temporaryPassword).toMatch(/[A-Za-z]/);
+    expect(result.temporaryPassword).toMatch(/\d/);
+    const updated = tx.user.update.mock.calls[0]?.[0] as { data: { passwordHash: string } };
+    await expect(compare(result.temporaryPassword, updated.data.passwordHash)).resolves.toBe(true);
+    expect(tx.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'student-1' } });
+  });
+
+  it('refuses to reset a deactivated account password', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'student-1',
+      email: 'alya@corp.test',
+      name: 'Alya',
+      active: false,
+    });
+
+    await expect(service.resetPassword('student-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.user.update).not.toHaveBeenCalled();
   });
 
   it('registers a new student and grants course access without a payment row', async () => {

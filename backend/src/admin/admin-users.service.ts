@@ -31,6 +31,13 @@ export interface BatchEnrollmentResult {
   skipped: BatchSkip[];
 }
 
+export interface AdminPasswordResetResult {
+  userId: string;
+  email: string;
+  name: string;
+  temporaryPassword: string;
+}
+
 const userSelect = {
   id: true,
   email: true,
@@ -107,6 +114,31 @@ export class AdminUsersService {
       },
       select: userSelect,
     });
+  }
+
+  async resetPassword(userId: string): Promise<AdminPasswordResetResult> {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, active: true },
+    });
+    if (!current) {
+      throw new NotFoundException('User not found.');
+    }
+    if (!current.active) {
+      throw new ConflictException('Activate the account before resetting the password.');
+    }
+    const password = temporaryPassword();
+    const passwordHash = await hash(password, 12);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: current.id }, data: { passwordHash } });
+      await tx.passwordResetToken.deleteMany({ where: { userId: current.id } });
+    });
+    return {
+      userId: current.id,
+      email: current.email,
+      name: current.name,
+      temporaryPassword: password,
+    };
   }
 
   async batchEnroll(dto: BatchEnrollDto): Promise<BatchEnrollmentResult> {

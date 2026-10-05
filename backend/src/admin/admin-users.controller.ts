@@ -1,9 +1,15 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
-import { AdminUsersService, type AdminUserPage, type AdminUserRecord, type BatchEnrollmentResult } from './admin-users.service';
+import {
+  AdminUsersService,
+  type AdminPasswordResetResult,
+  type AdminUserPage,
+  type AdminUserRecord,
+  type BatchEnrollmentResult,
+} from './admin-users.service';
 import { BatchEnrollDto, ListUsersQueryDto, UpdateAdminUserDto } from './dto/admin-user.dto';
 
 @Controller('admin')
@@ -23,6 +29,12 @@ export class AdminUsersController {
     @Body() dto: UpdateAdminUserDto,
   ): Promise<AdminUserRecord> {
     return this.adminUsersService.update(actor, userId, dto);
+  }
+
+  @Post('users/:userId/reset-password')
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Param('userId', ParseUUIDPipe) userId: string): Promise<AdminPasswordResetResult> {
+    return this.adminUsersService.resetPassword(userId);
   }
 
   @Post('enrollments/batch')

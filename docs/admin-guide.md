@@ -11,11 +11,13 @@ Admin juga boleh membuka studio instruktur. Cara menyusun kursus ada di [panduan
 Buka **Users** atau pergi ke `/admin/users`.
 
 1. Cari nama atau email, saring peran bila perlu, lalu pilih **Apply**.
-2. Ubah peran pada baris itu. Labelnya **Student**, **Instructor**, dan **Admin**. Admin adalah peran super admin.
-3. Pilih **Deactivate** untuk menutup masuk. **Activate** mengembalikan akun. Orang yang dinonaktifkan tidak bisa masuk dan tidak bisa mengatur ulang kata sandi.
-4. **Previous** dan **Next** membalik halaman berisi 20 akun.
+2. Pilih **Edit** di kolom nama, ubah nama tampilan, lalu **Save**. **Cancel** menutup tanpa menyimpan.
+3. Ubah peran pada baris itu. Labelnya **Student**, **Instructor**, dan **Admin**. Admin adalah peran super admin.
+4. Pilih **Reset password** untuk akun yang aktif. Kata sandi sementara ditampilkan sekali di layar. Salin sebelum menekan **Dismiss**. Tautan lupa kata sandi yang masih berlaku untuk akun itu dibatalkan.
+5. Pilih **Deactivate** untuk menutup masuk. **Activate** mengembalikan akun. Akun yang dinonaktifkan tidak bisa masuk, tidak bisa memakai lupa kata sandi, dan tidak bisa di-reset dari tombol ini sampai diaktifkan lagi.
+6. **Previous** dan **Next** membalik halaman berisi 20 akun.
 
-Direktori menolak menonaktifkan admin aktif yang terakhir, dan menolak mengubah admin terakhir itu menjadi peran lain.
+Direktori menolak menonaktifkan admin aktif yang terakhir, dan menolak mengubah admin terakhir itu menjadi peran lain. Akun tidak dihapus dari basis data.
 
 Agar seseorang punya studio, minta mereka mendaftar sebagai peserta. Lalu ubah perannya menjadi **Instructor**.
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,13 @@ interface BatchResult {
   skipped: Array<{ email: string; reason: string }>;
 }
 
+interface PasswordResetResult {
+  userId: string;
+  email: string;
+  name: string;
+  temporaryPassword: string;
+}
+
 const ROLES: AppRole[] = ['STUDENT', 'INSTRUCTOR', 'SUPER_ADMIN'];
 
 export function UsersAdmin() {
@@ -41,7 +48,10 @@ export function UsersAdmin() {
   const [data, setData] = useState<AdminUserPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [passwordNotice, setPasswordNotice] = useState<PasswordResetResult | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page), pageSize: '20' });
@@ -71,7 +81,7 @@ export function UsersAdmin() {
 
   const pageCount = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
-  async function patchUser(user: AdminUser, body: { role?: AppRole; active?: boolean }): Promise<void> {
+  async function patchUser(user: AdminUser, body: { name?: string; role?: AppRole; active?: boolean }): Promise<void> {
     setBusyId(user.id);
     setError(null);
     try {
@@ -84,6 +94,9 @@ export function UsersAdmin() {
           ? { ...current, items: current.items.map((item) => (item.id === updated.id ? updated : item)) }
           : current,
       );
+      if (body.name !== undefined) {
+        setEditingId(null);
+      }
     } catch (caught: unknown) {
       setError(caught instanceof ApiError ? caught.message : 'Could not update the user.');
     } finally {
@@ -91,12 +104,52 @@ export function UsersAdmin() {
     }
   }
 
+  async function resetPassword(user: AdminUser): Promise<void> {
+    if (!user.active) {
+      setError('Activate the account before resetting the password.');
+      return;
+    }
+    if (!window.confirm(`Reset the password for ${user.email}? The new password is shown once.`)) {
+      return;
+    }
+    setBusyId(user.id);
+    setError(null);
+    setPasswordNotice(null);
+    try {
+      const result = await apiRequest<PasswordResetResult>(`/admin/users/${user.id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setPasswordNotice(result);
+    } catch (caught: unknown) {
+      setError(caught instanceof ApiError ? caught.message : 'Could not reset the password.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function saveName(user: AdminUser, event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const name = draftName.trim();
+    if (name.length < 2) {
+      setError('Name must be at least 2 characters.');
+      return;
+    }
+    if (name === user.name) {
+      setEditingId(null);
+      return;
+    }
+    void patchUser(user, { name });
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold">Users</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Search accounts, change roles, and deactivate access.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Search accounts, edit names, change roles, reset passwords, and deactivate access.
+          </p>
         </div>
         <Button type="button" onClick={() => setBulkOpen(true)}>
           Bulk enroll
@@ -127,11 +180,23 @@ export function UsersAdmin() {
         <Button type="submit">Apply</Button>
       </form>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {passwordNotice ? (
+        <div className="rounded-lg border border-border bg-card px-4 py-3 text-sm" role="status">
+          <p className="font-medium">
+            Password reset for {passwordNotice.name} · {passwordNotice.email}
+          </p>
+          <p className="mt-2 font-mono text-xs">Temporary password: {passwordNotice.temporaryPassword}</p>
+          <p className="mt-2 text-muted-foreground">Copy it before you close this notice. It is not shown again.</p>
+          <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => setPasswordNotice(null)}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
       {!data ? <p className="text-sm text-muted-foreground">Loading users…</p> : null}
       {data ? (
         <>
           <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="border-b border-border text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
@@ -151,7 +216,47 @@ export function UsersAdmin() {
                 ) : (
                   data.items.map((user) => (
                     <tr key={user.id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3">{user.name}</td>
+                      <td className="px-4 py-3">
+                        {editingId === user.id ? (
+                          <form className="flex min-w-[14rem] items-center gap-2" onSubmit={(event) => saveName(user, event)}>
+                            <Input
+                              value={draftName}
+                              aria-label={`Name for ${user.email}`}
+                              onChange={(event) => setDraftName(event.target.value)}
+                              disabled={busyId === user.id}
+                            />
+                            <Button type="submit" size="sm" disabled={busyId === user.id}>
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === user.id}
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </form>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span>{user.name}</span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === user.id}
+                              onClick={() => {
+                                setEditingId(user.id);
+                                setDraftName(user.name);
+                                setError(null);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">{user.email}</td>
                       <td className="px-4 py-3">
                         <select
@@ -177,15 +282,26 @@ export function UsersAdmin() {
                         <Badge>{user.active ? 'Active' : 'Deactivated'}</Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busyId === user.id}
-                          onClick={() => void patchUser(user, { active: !user.active })}
-                        >
-                          {user.active ? 'Deactivate' : 'Activate'}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busyId === user.id || !user.active}
+                            onClick={() => void resetPassword(user)}
+                          >
+                            Reset password
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busyId === user.id}
+                            onClick={() => void patchUser(user, { active: !user.active })}
+                          >
+                            {user.active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
