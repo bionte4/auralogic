@@ -452,13 +452,28 @@ async function main() {
 
   const { writeFileSync, mkdirSync } = require('node:fs');
   const { join } = require('node:path');
-  const coverDir = join(__dirname, '../../frontend/public/covers');
-  mkdirSync(coverDir, { recursive: true });
+  const coverDir = process.env.SEED_COVER_DIR || join(__dirname, '../../frontend/public/covers');
+  let writeCovers = true;
+  try {
+    mkdirSync(coverDir, { recursive: true });
+  } catch (error) {
+    writeCovers = false;
+    console.warn(
+      `Skip writing cover SVGs to ${coverDir} (${error.code || error.message}). Database seed continues; rebuild the frontend image for covers in production.`,
+    );
+  }
 
   await prisma.course.updateMany({ where: { slug: { in: RETIRED_SLUGS } }, data: { status: 'ARCHIVED' } });
 
   for (const item of courses) {
-    writeFileSync(join(coverDir, `${item.slug}.svg`), coverSvg(item.accent, item.slug.length));
+    if (writeCovers) {
+      try {
+        writeFileSync(join(coverDir, `${item.slug}.svg`), coverSvg(item.accent, item.slug.length));
+      } catch (error) {
+        writeCovers = false;
+        console.warn(`Skip cover writes after ${item.slug} (${error.code || error.message}).`);
+      }
+    }
     const existing = await prisma.course.findUnique({ where: { slug: item.slug }, select: { id: true, publishedAt: true } });
     if (existing) {
       await prisma.course.update({

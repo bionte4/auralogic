@@ -157,14 +157,12 @@ Masuk di `https://auralogic.web.id/instructor/login`. Pekerjaan admin sehari-har
 
 Langkah ini opsional. Skrip `backend/prisma/seed-demo.cjs` membuat 14 kursus: tiga tiap jalur (Network, Cyber, Data Science, AI) plus dua Datacenter terbit. Tiap kursus punya satu pelajaran video dan satu kuis defensif. Hanya `network-foundation` yang sudah lunas untuk `student@fluentis.test`. Beranda menampilkan sepuluh kursus terbit. Watermark PDF saat unduh siswa dijelaskan di [attachments-watermark.md](./attachments-watermark.md).
 
-Skrip berhenti jika dua akun ini belum ada: `instructor@fluentis.test` dan `student@fluentis.test`. Di dalam kontainer, skrip juga menulis sampul ke `/frontend/public/covers`. Buat direktori itu sebagai root sebelum menjalankan skrip. Sampul yang dilihat pengunjung sudah ada di image frontend. Tulisan di kontainer API hanya agar skrip tidak gagal.
+Skrip berhenti jika dua akun ini belum ada: `instructor@fluentis.test` dan `student@fluentis.test`. Sampul kursus dilayani dari `frontend/public/covers` di **image frontend** (bukan dari kontainer API). Skrip seed menulis sampul hanya jika direktori itu dapat ditulis (dev lokal); di VPS seed database tetap jalan meski tulis sampul dilewati — setelah menambah slug baru, rebuild frontend: `sudo docker compose up -d --build frontend`.
 
 Ganti `DEMO_PASSWORD` sebelum menjalankan perintah.
 
 ```bash
 cd /opt/auralogic
-sudo docker compose exec -u root backend mkdir -p /frontend/public/covers
-sudo docker compose exec -u root backend chown -R node:node /frontend
 sudo docker compose exec \
   -e DEMO_PASSWORD='' \
   backend node -e '
