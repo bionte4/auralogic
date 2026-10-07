@@ -13,6 +13,7 @@ import { ATTACHMENT_STORE } from '../attachments/attachment.tokens';
 import { CacheService, courseStructureKey } from '../cache/cache.service';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import { PrismaService } from '../prisma/prisma.service';
+import { TracksService } from '../tracks/tracks.service';
 import type {
   CourseDetail,
   CourseRoster,
@@ -55,11 +56,13 @@ type CourseSummaryRow = Prisma.CourseGetPayload<{ select: typeof courseSummarySe
 export class CoursesService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly tracks: TracksService,
     @Optional() @Inject(CacheService) private readonly cache?: CacheService,
     @Optional() @Inject(ATTACHMENT_STORE) private readonly attachments?: AttachmentStore,
   ) {}
 
   async create(user: AuthenticatedUser, dto: CreateCourseDto): Promise<CourseSummary> {
+    await this.tracks.assertTrackAssignable(dto.track);
     const course = await this.prisma.course.create({
       data: {
         instructorId: user.id,
@@ -319,7 +322,10 @@ export class CoursesService {
     if (dto.slug !== undefined) data.slug = dto.slug;
     if (dto.description !== undefined) data.description = dto.description.trim();
     if (dto.level !== undefined) data.level = dto.level;
-    if (dto.track !== undefined) data.track = dto.track;
+    if (dto.track !== undefined) {
+      await this.tracks.assertTrackAssignable(dto.track);
+      data.track = dto.track;
+    }
     if (dto.contentLocale !== undefined) data.contentLocale = dto.contentLocale;
     if (dto.price !== undefined) data.price = new Prisma.Decimal(dto.price);
     if (dto.coverImageUrl !== undefined) data.coverImageUrl = httpsOrNull(dto.coverImageUrl);

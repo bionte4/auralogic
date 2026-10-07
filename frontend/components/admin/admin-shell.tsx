@@ -53,6 +53,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <Link href="/admin/users">Users</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
+              <Link href="/admin/tracks">Tracks</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
               <Link href="/admin/finance">Finance</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>

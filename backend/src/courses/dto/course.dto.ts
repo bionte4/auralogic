@@ -1,4 +1,4 @@
-import { ContentLocale, CourseStatus, SkillBand, Track } from '@prisma/client';
+import { ContentLocale, CourseStatus, SkillBand } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -13,6 +13,7 @@ import {
   MinLength,
   ValidateIf,
 } from 'class-validator';
+import { TRACK_SLUG_PATTERN } from '../../tracks/dto/track.dto';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -36,8 +37,9 @@ export class CreateCourseDto {
   @IsEnum(SkillBand)
   level!: SkillBand;
 
-  @IsEnum(Track)
-  track!: Track;
+  @IsString()
+  @Matches(TRACK_SLUG_PATTERN, { message: 'track must be an UPPER_SNAKE_CASE learning-track slug.' })
+  track!: string;
 
   @IsEnum(ContentLocale)
   contentLocale!: ContentLocale;
@@ -85,8 +87,9 @@ export class UpdateCourseDto {
   level?: SkillBand;
 
   @IsOptional()
-  @IsEnum(Track)
-  track?: Track;
+  @IsString()
+  @Matches(TRACK_SLUG_PATTERN, { message: 'track must be an UPPER_SNAKE_CASE learning-track slug.' })
+  track?: string;
 
   @IsOptional()
   @IsEnum(ContentLocale)
@@ -131,8 +134,9 @@ export class ListCoursesQueryDto {
   level?: SkillBand;
 
   @IsOptional()
-  @IsEnum(Track)
-  track?: Track;
+  @IsString()
+  @Matches(TRACK_SLUG_PATTERN, { message: 'track must be an UPPER_SNAKE_CASE learning-track slug.' })
+  track?: string;
 
   @IsOptional()
   @IsEnum(ContentLocale)

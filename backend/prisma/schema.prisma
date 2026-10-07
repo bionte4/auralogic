@@ -52,14 +52,6 @@ enum SkillBand {
   ADVANCED
 }
 
-enum Track {
-  NETWORK
-  CYBERSECURITY
-  DATA_SCIENCE
-  AI
-  DATACENTER
-}
-
 /// Language of authored course material. The interface language is separate.
 enum ContentLocale {
   ID
@@ -184,7 +176,8 @@ model Course {
   slug         String       @unique
   description  String
   level        SkillBand
-  track        Track
+  /// Slug of a row in learning_tracks (e.g. NETWORK, DATACENTER).
+  track        String
   contentLocale ContentLocale @default(ID)
   /// The other-language edition of this course, when the instructor published one.
   pairedCourseId String?       @unique @db.Uuid
@@ -213,6 +206,24 @@ model Course {
   @@index([instructorId])
   @@index([status, track])
   @@map("courses")
+}
+
+/// Catalog track shown on the home page and course filters. Managed by admins.
+model LearningTrack {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique
+  nameId    String
+  nameEn    String
+  blurbId   String
+  blurbEn   String
+  iconKey   String
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+  @@map("learning_tracks")
 }
 
 model Module {

@@ -19,7 +19,8 @@ describe('CoursesService roster', () => {
     course: { findUnique: jest.fn() },
     userProgress: { groupBy: jest.fn() },
   };
-  const service = new CoursesService(prisma as unknown as PrismaService);
+  const tracks = { assertTrackAssignable: jest.fn(async () => undefined) };
+  const service = new CoursesService(prisma as unknown as PrismaService, tracks as never);
 
   beforeEach(() => {
     jest.clearAllMocks();

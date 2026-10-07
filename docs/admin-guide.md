@@ -1,6 +1,6 @@
 # Panduan admin
 
-Admin masuk di `https://auralogic.web.id/instructor/login`. Halaman yang sama dipakai instruktur. Setelah masuk, header admin menampilkan **Courses**, **Users**, **Finance**, **Settings**, dan **New course**. Akun instruktur tidak melihat **Users**, **Finance**, dan **Settings**.
+Admin masuk di `https://auralogic.web.id/instructor/login`. Halaman yang sama dipakai instruktur. Setelah masuk, header admin menampilkan **Courses**, **Users**, **Tracks**, **Finance**, **Settings**, dan **New course**. Akun instruktur tidak melihat **Users**, **Tracks**, **Finance**, dan **Settings**.
 
 Pendaftaran di situs hanya membuat peserta. Admin pertama dibuat di server. Langkahnya ada di [operasi](operations.md). Pertahankan sedikitnya satu admin yang aktif.
 
@@ -20,6 +20,15 @@ Buka **Users** atau pergi ke `/admin/users`.
 Direktori menolak menonaktifkan admin aktif yang terakhir, dan menolak mengubah admin terakhir itu menjadi peran lain. Akun tidak dihapus dari basis data.
 
 Agar seseorang punya studio, minta mereka mendaftar sebagai peserta. Lalu ubah perannya menjadi **Instructor**.
+
+## Jalur (kartu beranda)
+
+Buka **Tracks** atau pergi ke `/admin/tracks`. Kartu jalur di beranda dan filter katalog diambil dari daftar ini, bukan dari hardcode frontend. Detail skema ada di [tracks-admin.md](./tracks-admin.md).
+
+1. Pilih **Add track** untuk jalur baru. Slug memakai `UPPER_SNAKE_CASE` (contoh `CLOUD`) dan tidak diubah lagi setelah dibuat.
+2. Isi nama dan deskripsi singkat dalam bahasa Indonesia dan Inggris, pilih ikon, lalu **Create track**.
+3. **Edit** mengubah teks, ikon, urutan, atau menonaktifkan jalur. Jalur nonaktif hilang dari beranda; kursus yang sudah memakai slug itu tetap ada.
+4. **Delete** hanya berhasil jika tidak ada kursus yang memakai slug itu. Jika masih dipakai, nonaktifkan saja.
 
 ## Daftar massal
 

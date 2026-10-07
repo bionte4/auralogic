@@ -10,6 +10,7 @@ import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
 import { formatIdr } from '@/lib/course-draft';
 import type { CourseDetail } from '@/lib/courses';
+import { trackSlugLabel } from '@/lib/learning-tracks';
 import { readSession } from '@/lib/session';
 
 export function PublicCourse({ courseId }: { courseId: string }) {
@@ -80,7 +81,7 @@ function CourseBody({
 }) {
   const { m } = useI18n();
   const band = m.bands[course.level];
-  const track = m.tracks[course.track];
+  const track = trackSlugLabel(course.track, m.tracks);
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">

@@ -9,6 +9,7 @@ import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
 import { formatIdr } from '@/lib/course-draft';
 import type { CourseDetail } from '@/lib/courses';
+import { trackSlugLabel } from '@/lib/learning-tracks';
 import { readSession } from '@/lib/session';
 
 interface EnrollmentMark {
@@ -88,7 +89,7 @@ export function CourseDetailView({ courseId }: { courseId: string }) {
   }
 
   const band = m.bands[course.level];
-  const track = m.tracks[course.track];
+  const track = trackSlugLabel(course.track, m.tracks);
   const opening = course.modules[0]?.lessons[0] ?? null;
 
   return (

@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
 import { filterCatalog, type PriceBand } from '@/lib/catalog-filters';
-import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, formatIdr } from '@/lib/course-draft';
+import { CONTENT_LOCALES, SKILL_BANDS, formatIdr } from '@/lib/course-draft';
 import type { ContentLocale, CourseSummary, LearningTrack, SkillBand } from '@/lib/courses';
+import { listPublicTracks, trackName, trackSlugLabel, type LearningTrackRecord } from '@/lib/learning-tracks';
 
 interface CheckoutResult {
   checkoutUrl: string | null;
@@ -27,15 +28,21 @@ export function CourseCatalog({
   courses: CourseSummary[];
   enrollments: EnrollmentMark[];
 }) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [track, setTrack] = useState<LearningTrack | ''>('');
   const [level, setLevel] = useState<SkillBand | ''>('');
   const [contentLocale, setContentLocale] = useState<ContentLocale | ''>('');
   const [price, setPrice] = useState<PriceBand>('');
   const visible = filterCatalog(courses, { track, level, contentLocale, price });
   const enrolled = new Map(enrollments.map((item) => [item.courseId, item.accessGranted]));
+  const uiLocale = locale === 'en' ? 'EN' : 'ID';
+
+  useEffect(() => {
+    void listPublicTracks().then(setTracks).catch(() => setTracks([]));
+  }, []);
 
   async function choose(courseId: string): Promise<void> {
     setPendingId(courseId);
@@ -72,9 +79,9 @@ export function CourseCatalog({
             onChange={(event) => setTrack(event.target.value as LearningTrack | '')}
           >
             <option value="">{m.catalog.allTracks}</option>
-            {TRACKS.map((item) => (
-              <option key={item} value={item}>
-                {m.tracks[item]}
+            {tracks.map((item) => (
+              <option key={item.slug} value={item.slug}>
+                {trackName(item, uiLocale)}
               </option>
             ))}
           </select>
@@ -139,7 +146,7 @@ export function CourseCatalog({
                     <img src={course.coverImageUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-end bg-gradient-to-br from-zinc-800 to-zinc-950 p-4 text-sm font-medium text-white">
-                      {m.tracks[course.track]}
+                      {trackSlugLabel(course.track, m.tracks)}
                     </div>
                   )}
                 </Link>
@@ -155,7 +162,7 @@ export function CourseCatalog({
                 <CardContent className="flex flex-1 flex-col gap-4">
                   <p className="line-clamp-3 text-sm text-muted-foreground">{course.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    {course.instructor.name} · {m.tracks[course.track]} · {m.languages[course.contentLocale]}
+                    {course.instructor.name} · {trackSlugLabel(course.track, m.tracks)} · {m.languages[course.contentLocale]}
                   </p>
                   <div className="mt-auto">
                     {access === true ? (

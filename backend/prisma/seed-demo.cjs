@@ -450,6 +450,20 @@ async function main() {
   }
   await prisma.user.update({ where: { id: instructor.id }, data: { name: 'Auralogic Studio' } });
 
+  // Ensure learning_tracks exist before courses reference their slugs.
+  const trackCount = await prisma.learningTrack.count();
+  if (trackCount === 0) {
+    await prisma.learningTrack.createMany({
+      data: [
+        { slug: 'NETWORK', nameId: 'Network', nameEn: 'Network', blurbId: 'Pengalamatan, subnet, dan jalur paket.', blurbEn: 'Addressing, subnets, and how packets find a path.', iconKey: 'waypoints', sortOrder: 10 },
+        { slug: 'CYBERSECURITY', nameId: 'Cybersecurity', nameEn: 'Cybersecurity', blurbId: 'Risiko, baseline, dan rekomendasi hardening.', blurbEn: 'Risk, baselines, and hardening recommendations.', iconKey: 'shield', sortOrder: 20 },
+        { slug: 'DATA_SCIENCE', nameId: 'Data science', nameEn: 'Data science', blurbId: 'SQL, pembersihan data, dan metrik.', blurbEn: 'SQL, cleaning data, and reading metrics.', iconKey: 'chart', sortOrder: 30 },
+        { slug: 'AI', nameId: 'AI', nameEn: 'AI', blurbId: 'Batas model dan keputusan yang tetap diawasi.', blurbEn: 'Model limits and decisions that stay under review.', iconKey: 'sparkles', sortOrder: 40 },
+        { slug: 'DATACENTER', nameId: 'Datacenter', nameEn: 'Datacenter', blurbId: 'Fasilitas, daya, pendinginan, dan operasi ruang server.', blurbEn: 'Facilities, power, cooling, and running a server room.', iconKey: 'server', sortOrder: 50 },
+      ],
+    });
+  }
+
   const { writeFileSync, mkdirSync } = require('node:fs');
   const { join } = require('node:path');
   const coverDir = process.env.SEED_COVER_DIR || join(__dirname, '../../frontend/public/covers');

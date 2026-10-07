@@ -19,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProgressModule } from './progress/progress.module';
 import { QuizModule } from './quiz/quiz.module';
 import { ScoringModule } from './scoring/scoring.module';
+import { TracksModule } from './tracks/tracks.module';
 import { VideoModule } from './video/video.module';
 
 @Module({
@@ -38,6 +39,7 @@ import { VideoModule } from './video/video.module';
     LessonsModule,
     PaymentsModule,
     ScoringModule,
+    TracksModule,
     VideoModule,
   ],
   controllers: [HealthController],

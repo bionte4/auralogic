@@ -1,4 +1,4 @@
-import type { ContentLocale, CourseStatus, EnrollmentStatus, LessonType, PaymentStatus, SkillBand, Track } from '@prisma/client';
+import type { ContentLocale, CourseStatus, EnrollmentStatus, LessonType, PaymentStatus, SkillBand } from '@prisma/client';
 
 export interface InstructorSummary {
   id: string;
@@ -37,7 +37,7 @@ export interface CourseSummary {
   slug: string;
   description: string;
   level: SkillBand;
-  track: Track;
+  track: string;
   contentLocale: ContentLocale;
   status: CourseStatus;
   publishedAt: Date | null;

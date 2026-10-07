@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { ApiError, apiRequest } from '@/lib/api';
 import { formatIdr, LESSON_TYPES, validateLessonDraft, validateModuleTitle, type LessonDraft } from '@/lib/course-draft';
 import type { CourseDetail, CourseRoster, CreatedLesson, CreatedModule, LessonSummary } from '@/lib/courses';
+import { trackSlugLabel } from '@/lib/learning-tracks';
 import { readSession } from '@/lib/session';
 
 type StudioTab = 'outline' | 'video' | 'students';
@@ -77,7 +78,7 @@ export function CourseStudio({ courseId }: { courseId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            {m.bands[course.level]} · {m.tracks[course.track]} · {m.languages[course.contentLocale]} · {formatIdr(course.price)}
+            {m.bands[course.level]} · {trackSlugLabel(course.track, m.tracks)} · {m.languages[course.contentLocale]} · {formatIdr(course.price)}
           </p>
           <h1 className="mt-1 text-3xl font-semibold">{course.title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{course.description}</p>

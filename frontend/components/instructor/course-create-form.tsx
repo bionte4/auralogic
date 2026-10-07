@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,25 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, validateCourseDraft, type CourseDraft } from '@/lib/course-draft';
+import { CONTENT_LOCALES, SKILL_BANDS, validateCourseDraft, type CourseDraft } from '@/lib/course-draft';
 import type { CourseSummary } from '@/lib/courses';
+import { listPublicTracks, trackName, type LearningTrackRecord } from '@/lib/learning-tracks';
 import { readSession } from '@/lib/session';
 
 const emptyDraft: CourseDraft = { title: '', description: '', level: '', track: '', contentLocale: 'ID', price: '' };
 
 export function CourseCreateForm() {
   const router = useRouter();
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const [draft, setDraft] = useState<CourseDraft>(emptyDraft);
+  const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const uiLocale = locale === 'en' ? 'EN' : 'ID';
+
+  useEffect(() => {
+    void listPublicTracks().then(setTracks).catch(() => setTracks([]));
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,9 +100,9 @@ export function CourseCreateForm() {
                 required
               >
                 <option value="">{m.studio.selectTrack}</option>
-                {TRACKS.map((track) => (
-                  <option key={track} value={track}>
-                    {m.tracks[track]}
+                {tracks.map((track) => (
+                  <option key={track.slug} value={track.slug}>
+                    {trackName(track, uiLocale)}
                   </option>
                 ))}
               </select>

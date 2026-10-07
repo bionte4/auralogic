@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { CONTENT_LOCALES, SKILL_BANDS, TRACKS, validateCourseDraft } from '@/lib/course-draft';
+import { CONTENT_LOCALES, SKILL_BANDS, validateCourseDraft } from '@/lib/course-draft';
 import type { ContentLocale, CourseDetail, CourseSummary, LearningTrack, SkillBand } from '@/lib/courses';
+import { listPublicTracks, trackName, type LearningTrackRecord } from '@/lib/learning-tracks';
 
 export function CourseProfileForm({
   course,
@@ -20,7 +21,7 @@ export function CourseProfileForm({
   onSaved: () => Promise<void>;
   onError: (message: string | null) => void;
 }) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const draft = course.status === 'DRAFT';
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description);
@@ -31,8 +32,10 @@ export function CourseProfileForm({
   const [contentLocale, setContentLocale] = useState<ContentLocale>(course.contentLocale);
   const [pairedCourseId, setPairedCourseId] = useState(course.pairedCourse?.id ?? '');
   const [options, setOptions] = useState<CourseSummary[]>([]);
+  const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [outcome, setOutcome] = useState(course.outcome ?? '');
   const [pending, setPending] = useState(false);
+  const uiLocale = locale === 'en' ? 'EN' : 'ID';
 
   useEffect(() => {
     setTitle(course.title);
@@ -51,6 +54,31 @@ export function CourseProfileForm({
       .then((rows) => setOptions(rows.filter((item) => item.id !== course.id)))
       .catch(() => setOptions([]));
   }, [course.id]);
+
+  useEffect(() => {
+    void listPublicTracks()
+      .then((rows) => {
+        if (!rows.some((row) => row.slug === course.track)) {
+          setTracks([
+            ...rows,
+            {
+              id: `legacy-${course.track}`,
+              slug: course.track,
+              nameId: course.track,
+              nameEn: course.track,
+              blurbId: '',
+              blurbEn: '',
+              iconKey: 'waypoints',
+              sortOrder: 9999,
+              active: false,
+            },
+          ]);
+          return;
+        }
+        setTracks(rows);
+      })
+      .catch(() => setTracks([]));
+  }, [course.track]);
 
   async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -166,9 +194,9 @@ export function CourseProfileForm({
               value={track}
               onChange={(event) => setTrack(event.target.value as LearningTrack)}
             >
-              {TRACKS.map((item) => (
-                <option key={item} value={item}>
-                  {m.tracks[item]}
+              {tracks.map((item) => (
+                <option key={item.slug} value={item.slug}>
+                  {trackName(item, uiLocale)}
                 </option>
               ))}
             </select>

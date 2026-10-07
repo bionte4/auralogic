@@ -1,4 +1,7 @@
+import { isTrackSlug } from '@/lib/learning-tracks';
+
 export const SKILL_BANDS = ['FOUNDATION', 'PRACTITIONER', 'ADVANCED'] as const;
+/** @deprecated Prefer /tracks from the API. Kept for older filters that still iterate a static list. */
 export const TRACKS = ['NETWORK', 'CYBERSECURITY', 'DATA_SCIENCE', 'AI', 'DATACENTER'] as const;
 export const CONTENT_LOCALES = ['ID', 'EN'] as const;
 export const PROJECT_KINDS = ['LAB_REPORT', 'ANALYSIS', 'DESIGN', 'NOTEBOOK'] as const;
@@ -6,7 +9,7 @@ export const LESSON_TYPES = ['VIDEO', 'READING', 'QUIZ'] as const;
 export type ProjectKind = (typeof PROJECT_KINDS)[number];
 
 export type SkillBand = (typeof SKILL_BANDS)[number];
-export type Track = (typeof TRACKS)[number];
+export type Track = string;
 export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 export type LessonType = (typeof LESSON_TYPES)[number];
 
@@ -37,7 +40,7 @@ export function validateCourseDraft(draft: CourseDraft): CourseDraftError | null
   if (!SKILL_BANDS.some((level) => level === draft.level)) {
     return 'band';
   }
-  if (!TRACKS.some((track) => track === draft.track)) {
+  if (!draft.track || !isTrackSlug(draft.track)) {
     return 'track';
   }
   if (!CONTENT_LOCALES.some((locale) => locale === draft.contentLocale)) {

@@ -8,27 +8,26 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/components/locale-provider';
 import { ApiError, apiRequest } from '@/lib/api';
-import { TRACKS, formatIdr } from '@/lib/course-draft';
-import type { LearningTrack, PublicCourseCard } from '@/lib/courses';
-
-function isTrack(value: string | null): value is LearningTrack {
-  return TRACKS.some((item) => item === value);
-}
+import { formatIdr } from '@/lib/course-draft';
+import type { PublicCourseCard } from '@/lib/courses';
+import { isTrackSlug, listPublicTracks, trackName, trackSlugLabel, type LearningTrackRecord } from '@/lib/learning-tracks';
 
 export function CourseRow() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
   const scroller = useRef<HTMLDivElement>(null);
   const [courses, setCourses] = useState<PublicCourseCard[] | null>(null);
+  const [tracks, setTracks] = useState<LearningTrackRecord[]>([]);
   const [error, setError] = useState<'load' | string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
   const query = params.get('q')?.trim() ?? '';
   const trackParam = params.get('track');
-  const track: LearningTrack | '' = isTrack(trackParam) ? trackParam : '';
+  const track = trackParam && isTrackSlug(trackParam) ? trackParam : '';
+  const uiLocale = locale === 'en' ? 'EN' : 'ID';
 
-  function selectTrack(next: LearningTrack | ''): void {
+  function selectTrack(next: string): void {
     const search = new URLSearchParams(params.toString());
     if (next) {
       search.set('track', next);
@@ -43,6 +42,10 @@ export function CourseRow() {
   function scrollRow(direction: -1 | 1): void {
     scroller.current?.scrollBy({ left: direction * 320, behavior: 'smooth' });
   }
+
+  useEffect(() => {
+    void listPublicTracks().then(setTracks).catch(() => setTracks([]));
+  }, []);
 
   useEffect(() => {
     void apiRequest<PublicCourseCard[]>('/courses/catalog')
@@ -115,9 +118,9 @@ export function CourseRow() {
         <Tab active={track === ''} onClick={() => selectTrack('')}>
           {m.catalog.allTracks}
         </Tab>
-        {TRACKS.map((item) => (
-          <Tab key={item} active={track === item} onClick={() => selectTrack(item)}>
-            {m.tracks[item]}
+        {tracks.map((item) => (
+          <Tab key={item.slug} active={track === item.slug} onClick={() => selectTrack(item.slug)}>
+            {trackName(item, uiLocale)}
           </Tab>
         ))}
       </div>
@@ -196,7 +199,7 @@ function CourseCard({
           {course.coverImageUrl ? (
             <img src={course.coverImageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full items-end bg-zinc-900 p-3 text-sm font-semibold text-white">{m.tracks[course.track]}</div>
+            <div className="flex h-full items-end bg-zinc-900 p-3 text-sm font-semibold text-white">{trackSlugLabel(course.track, m.tracks)}</div>
           )}
         </div>
         <div className="flex flex-col gap-1 p-3">
@@ -218,7 +221,7 @@ function CoursePreview({ course, onHold, onLeave }: { course: PublicCourseCard; 
   const facts = [
     course.durationMinutes > 0 ? `${course.durationMinutes} ${m.catalog.minutes}` : null,
     m.bands[course.level],
-    m.tracks[course.track],
+    trackSlugLabel(course.track, m.tracks),
     m.languages[course.contentLocale],
   ].filter((item): item is string => Boolean(item));
 

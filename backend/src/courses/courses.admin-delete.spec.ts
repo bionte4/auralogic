@@ -35,7 +35,13 @@ describe('CoursesService admin delete', () => {
     coursePlacement: { updateMany: jest.fn() },
   };
   const attachments = { remove: jest.fn(async () => undefined) };
-  const service = new CoursesService(prisma as unknown as PrismaService, undefined, attachments as never);
+  const tracks = { assertTrackAssignable: jest.fn(async () => undefined) };
+  const service = new CoursesService(
+    prisma as unknown as PrismaService,
+    tracks as never,
+    undefined,
+    attachments as never,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
