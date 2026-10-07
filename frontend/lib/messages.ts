@@ -19,7 +19,7 @@ const id = {
   home: {
     eyebrow: 'Auralogic',
     title: 'Bangun keterampilan untuk peran berikutnya',
-    lead: 'Network, cybersecurity, data science, dan AI. Setiap kursus terbuka satu modul demi satu modul.',
+    lead: 'Network, cybersecurity, data science, AI, dan datacenter. Setiap kursus terbuka satu modul demi satu modul.',
     explore: 'Lihat kursus',
     studentLogin: 'Masuk peserta',
     skillsTitle: 'Keterampilan untuk langkah berikutnya',
@@ -32,6 +32,7 @@ const id = {
       CYBERSECURITY: 'Risiko, baseline, dan rekomendasi hardening.',
       DATA_SCIENCE: 'SQL, pembersihan data, dan metrik.',
       AI: 'Batas model dan keputusan yang tetap diawasi.',
+      DATACENTER: 'Fasilitas, daya, pendinginan, dan operasi ruang server.',
     },
     features: [
       {
@@ -88,6 +89,7 @@ const id = {
     CYBERSECURITY: 'Cybersecurity',
     DATA_SCIENCE: 'Data science',
     AI: 'AI',
+    DATACENTER: 'Datacenter',
   },
   bands: {
     FOUNDATION: 'Fondasi',
@@ -214,7 +216,7 @@ const en: Messages = {
   home: {
     eyebrow: 'Auralogic',
     title: 'Build the skills for your next role',
-    lead: 'Network, cybersecurity, data science, and AI. Each course opens one module at a time.',
+    lead: 'Network, cybersecurity, data science, AI, and datacenter. Each course opens one module at a time.',
     explore: 'Explore courses',
     studentLogin: 'Student login',
     skillsTitle: 'Skills for what you do next',
@@ -227,6 +229,7 @@ const en: Messages = {
       CYBERSECURITY: 'Risk, baselines, and hardening recommendations.',
       DATA_SCIENCE: 'SQL, cleaning, and the metric that answers the question.',
       AI: 'Model limits and decisions that stay reviewed.',
+      DATACENTER: 'Facilities, power, cooling, and running a server room.',
     },
     features: [
       {
@@ -283,6 +286,7 @@ const en: Messages = {
     CYBERSECURITY: 'Cybersecurity',
     DATA_SCIENCE: 'Data science',
     AI: 'AI',
+    DATACENTER: 'Datacenter',
   },
   bands: {
     FOUNDATION: 'Foundation',

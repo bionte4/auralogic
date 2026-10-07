@@ -1,9 +1,11 @@
+import type { Track } from '@/lib/course-draft';
+
 export interface InstructorSummary {
   id: string;
   name: string;
 }
 
-export type LearningTrack = 'NETWORK' | 'CYBERSECURITY' | 'DATA_SCIENCE' | 'AI';
+export type LearningTrack = Track;
 export type SkillBand = 'FOUNDATION' | 'PRACTITIONER' | 'ADVANCED';
 export type ContentLocale = 'ID' | 'EN';
 

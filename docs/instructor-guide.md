@@ -11,7 +11,7 @@ Akun instruktur tidak dibuat dari tombol **Daftar**. Peserta mendaftar dulu, lal
 1. Di header, pilih **New course**. Formulir ada di `/instructor/courses/new`.
 2. Isi judul (minimal 3 karakter), deskripsi, **Jenjang**, **Jalur**, **Bahasa materi**, dan **Harga (IDR)**.
    - Jenjang: Fondasi, Praktisi, atau Lanjut.
-   - Jalur: Network, Cybersecurity, Data science, atau AI.
+   - Jalur: Network, Cybersecurity, Data science, AI, atau Datacenter.
    - Bahasa materi: Indonesia atau English. Ini bahasa isi pelajaran, bukan bahasa tombol.
    - Harga bilangan bulat rupiah, dari 1 sampai 100.000.000.
 3. Pilih **Lanjut ke modul**. Studio terbuka di `/instructor/courses/<id>`.

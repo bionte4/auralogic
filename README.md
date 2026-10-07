@@ -1,6 +1,6 @@
 # Auralogic
 
-Auralogic is a learning platform for network, cybersecurity, data science, and AI. Students move through a course one module at a time. The interface can be Indonesian or English. Course material stays in the language the instructor wrote. The API refuses a lesson when the previous module is still incomplete. Video is streamed as encrypted HLS, and a paid enrollment is activated only after a verified payment notification.
+Auralogic is a learning platform for network, cybersecurity, data science, AI, and datacenter. Students move through a course one module at a time. The interface can be Indonesian or English. Course material stays in the language the instructor wrote. The API refuses a lesson when the previous module is still incomplete. Video is streamed as encrypted HLS, and a paid enrollment is activated only after a verified payment notification.
 
 The web app and the API are separate services.
 

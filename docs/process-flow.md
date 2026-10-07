@@ -2,7 +2,7 @@
 
 Ini jalur yang benar-benar diikuti Auralogic. Peramban tidak bisa memberi akses kursus atau melewati modul. Kedua keputusan itu dibuat API.
 
-Satu modul ditampilkan sebagai **Level** di studio dan pemutar. Jenjang kursus (Fondasi, Praktisi, Lanjut) dan jalur (Network, Cybersecurity, Data science, AI) hanya label katalog. Keduanya tidak membuka atau mengunci pelajaran. Aplikasi juga tidak memaksa urutan antar-kursus.
+Satu modul ditampilkan sebagai **Level** di studio dan pemutar. Jenjang kursus (Fondasi, Praktisi, Lanjut) dan jalur (Network, Cybersecurity, Data science, AI, Datacenter) hanya label katalog. Keduanya tidak membuka atau mengunci pelajaran. Aplikasi juga tidak memaksa urutan antar-kursus.
 
 Bahasa antarmuka (cookie `locale`, nilai akun `ID` atau `EN`) terpisah dari bahasa materi kursus. Mengganti bahasa tombol tidak menerjemahkan pelajaran. Edisi bahasa lain adalah kursus pasangan.
 

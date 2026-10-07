@@ -57,6 +57,7 @@ enum Track {
   CYBERSECURITY
   DATA_SCIENCE
   AI
+  DATACENTER
 }
 
 /// Language of authored course material. The interface language is separate.

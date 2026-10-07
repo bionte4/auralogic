@@ -1,5 +1,5 @@
 export const SKILL_BANDS = ['FOUNDATION', 'PRACTITIONER', 'ADVANCED'] as const;
-export const TRACKS = ['NETWORK', 'CYBERSECURITY', 'DATA_SCIENCE', 'AI'] as const;
+export const TRACKS = ['NETWORK', 'CYBERSECURITY', 'DATA_SCIENCE', 'AI', 'DATACENTER'] as const;
 export const CONTENT_LOCALES = ['ID', 'EN'] as const;
 export const PROJECT_KINDS = ['LAB_REPORT', 'ANALYSIS', 'DESIGN', 'NOTEBOOK'] as const;
 export const LESSON_TYPES = ['VIDEO', 'READING', 'QUIZ'] as const;

@@ -33,7 +33,7 @@ Selama pengiriman surat masih mode log, tautan hanya ada di log API. Minta tauta
 
 ## Pilih dan bayar kursus
 
-Beranda menampilkan kursus yang sudah terbit, sebelum masuk. Saring lewat jalur (Network, Cybersecurity, Data science, AI), jenjang (Fondasi, Praktisi, Lanjut), bahasa materi, atau kotak **Cari kursus**.
+Beranda menampilkan kursus yang sudah terbit, sebelum masuk. Saring lewat jalur (Network, Cybersecurity, Data science, AI, Datacenter), jenjang (Fondasi, Praktisi, Lanjut), bahasa materi, atau kotak **Cari kursus**.
 
 1. Buka sebuah kartu kursus. Baca hasil belajar dan daftar modul.
 2. Pilih **Pilih kursus**. Jika belum masuk, situs meminta masuk dulu, lalu membuka halaman pembayaran.

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, ShieldCheck, Sparkles, Waypoints } from 'lucide-react';
+import { BarChart3, Server, ShieldCheck, Sparkles, Waypoints } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, useId } from 'react';
 import { BrandLockup } from '@/components/brand-mark';
@@ -15,6 +15,7 @@ const TRACK_ICONS = {
   CYBERSECURITY: ShieldCheck,
   DATA_SCIENCE: BarChart3,
   AI: Sparkles,
+  DATACENTER: Server,
 } as const satisfies Record<LearningTrack, typeof Waypoints>;
 
 export default function HomePage() {
@@ -77,7 +78,7 @@ function Home() {
         <section id="topics" className="border-t border-border">
           <div className="mx-auto max-w-7xl scroll-mt-24 px-4 py-8 sm:px-6 sm:py-10">
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{m.home.topicsTitle}</h2>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {TRACKS.map((track) => {
                 const Icon = TRACK_ICONS[track];
                 return (
