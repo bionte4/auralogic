@@ -1,13 +1,15 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import type { Readable } from 'stream';
+import { Readable } from 'stream';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProgressService } from '../progress/progress.service';
 import { contentDisposition, inspectAttachment, MAX_ATTACHMENTS_PER_LESSON } from './attachment.rules';
 import type { AttachmentStore } from './attachment.store';
 import { ATTACHMENT_STORE } from './attachment.tokens';
+import { watermarkPdf } from './pdf-watermark';
+import { streamToBuffer } from './stream-to-buffer';
 
 export interface AttachmentView {
   id: string;
@@ -78,7 +80,17 @@ export class AttachmentsService {
     if (!attachment) {
       throw new NotFoundException('Lesson material not found.');
     }
-    const stream = await this.store.read(attachment.objectKey);
+    const raw = await this.store.read(attachment.objectKey);
+    let stream: Readable = raw;
+    if (user.role === Role.STUDENT && attachment.contentType === 'application/pdf') {
+      const bytes = await streamToBuffer(raw);
+      const marked = await watermarkPdf(bytes, {
+        name: user.name,
+        email: user.email,
+        userId: user.id,
+      });
+      stream = Readable.from(marked);
+    }
     return {
       stream,
       contentType: attachment.contentType,

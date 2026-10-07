@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import type { Readable } from 'stream';
+import { PDFDocument } from 'pdf-lib';
+import { Readable } from 'stream';
 import type { AuthenticatedUser } from '../common/types/authenticated-request';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ProgressService } from '../progress/progress.service';
@@ -32,6 +33,7 @@ describe('AttachmentsService', () => {
     store,
   );
   const instructor: AuthenticatedUser = { id: 'instructor-1', email: 'instructor@fluentis.test', name: 'Instructor', role: Role.INSTRUCTOR, locale: 'ID' };
+  const student: AuthenticatedUser = { id: 'student-1', email: 'student@fluentis.test', name: 'Student', role: Role.STUDENT, locale: 'ID' };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -83,4 +85,33 @@ describe('AttachmentsService', () => {
     expect(store.remove).toHaveBeenCalled();
     expect(prisma.lessonAttachment.delete).toHaveBeenCalledWith({ where: { id: 'attachment-1' } });
   });
+
+  it('watermarks PDF downloads for students but not for instructors', async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage([200, 200]);
+    const pdf = Buffer.from(await doc.save());
+    prisma.lessonAttachment.findFirst.mockResolvedValue({
+      fileName: 'notes.pdf',
+      contentType: 'application/pdf',
+      objectKey: 'lessons/x/file.pdf',
+    });
+    (store.read as jest.Mock).mockResolvedValue(Readable.from(pdf));
+
+    const studentDownload = await service.download(student, LESSON_ID, 'attachment-1');
+    const studentBytes = await streamToBuffer(studentDownload.stream);
+    expect(studentBytes.length).toBeGreaterThan(pdf.length);
+
+    (store.read as jest.Mock).mockResolvedValue(Readable.from(pdf));
+    const instructorDownload = await service.download(instructor, LESSON_ID, 'attachment-1');
+    const instructorBytes = await streamToBuffer(instructorDownload.stream);
+    expect(instructorBytes.equals(pdf)).toBe(true);
+  });
 });
+
+async function streamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}

@@ -155,7 +155,7 @@ Masuk di `https://auralogic.web.id/instructor/login`. Pekerjaan admin sehari-har
 
 ## 8. Kursus demo
 
-Langkah ini opsional. Skrip `backend/prisma/seed-demo.cjs` membuat 12 kursus, tiga tiap jalur: dua terbit dan satu draf. Tiap kursus punya satu pelajaran video dan satu kuis defensif. Hanya `network-foundation` yang sudah lunas untuk `student@fluentis.test`. Beranda menampilkan delapan kursus terbit.
+Langkah ini opsional. Skrip `backend/prisma/seed-demo.cjs` membuat 14 kursus: tiga tiap jalur (Network, Cyber, Data Science, AI) plus dua Datacenter terbit. Tiap kursus punya satu pelajaran video dan satu kuis defensif. Hanya `network-foundation` yang sudah lunas untuk `student@fluentis.test`. Beranda menampilkan sepuluh kursus terbit. Watermark PDF saat unduh siswa dijelaskan di [attachments-watermark.md](./attachments-watermark.md).
 
 Skrip berhenti jika dua akun ini belum ada: `instructor@fluentis.test` dan `student@fluentis.test`. Di dalam kontainer, skrip juga menulis sampul ke `/frontend/public/covers`. Buat direktori itu sebagai root sebelum menjalankan skrip. Sampul yang dilihat pengunjung sudah ada di image frontend. Tulisan di kontainer API hanya agar skrip tidak gagal.
 
