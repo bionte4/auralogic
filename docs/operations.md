@@ -188,6 +188,26 @@ sudo docker compose exec backend node prisma/seed-demo.cjs
 
 Peserta demo masuk di `/student/login`. Instruktur demo masuk di `/instructor/login`. Akun admin production tetap akun dari bagian 7.
 
+## 8b. Perbaikan backend unhealthy (enum Track → text)
+
+Jika setelah deploy jalur admin kontainer `backend` berstatus unhealthy, cek log:
+
+```bash
+sudo docker compose logs backend --tail 100
+```
+
+Jika ada error cast/enum pada kolom `track`, jalankan sekali di Postgres lalu rebuild:
+
+```bash
+sudo docker compose exec -T postgres psql -U "${POSTGRES_USER:-fluentis}" -d "${POSTGRES_DB:-fluentis}" <<'SQL'
+ALTER TABLE "courses" ALTER COLUMN "track" TYPE TEXT USING "track"::text;
+DROP TYPE IF EXISTS "Track";
+SQL
+sudo docker compose up -d --build backend
+```
+
+Image baru sudah menjalankan SQL itu otomatis sebelum `prisma db push`.
+
 ## 9. Pembaruan
 
 ```bash
